@@ -1,0 +1,116 @@
+-- http://projects.haskell.org/xmobar/
+-- install xmobar with these flags: --flags="with_alsa" --flags="with_mpd" --flags="with_xft"  OR --flags="all_extensions"
+-- you can find weather location codes here: http://weather.noaa.gov/index.html
+
+Config { font            = "xft:Mononoki Nerd Font:weight=bold:pixelsize=11:antialias=true:hinting=true"
+       , additionalFonts = [ "xft:Mononoki Nerd Font:pixelsize=11:antialias=true:hinting=true"
+                           , "xft:FontAwesome:pixelsize=13"
+                           ]
+       , bgColor         = "#282c34"
+       , fgColor         = "#ff6c6b"
+       , position        = Top
+       , iconRoot        = "@iconRoot@"  -- default: "."
+
+       -- layout
+       , sepChar =  "%"   -- delineator between plugin names and straight text
+       , alignSep = "}{"  -- separator between left-right alignment
+       , template = " <action=`xdotool key control+alt+g`><icon=haskell_12.xpm/> </action> %UnsafeStdinReader% }{ %battery%  %coretemp%  %multicpu%  %memory%  %disku%  %dynnetwork%  %date%"
+
+       -- general behavior
+       , lowerOnStart     = True    -- send to bottom of window stack on start
+       , hideOnStart      = False   -- start with window unmapped (hidden)
+       , allDesktops      = True    -- show on all desktops
+       , overrideRedirect = True    -- set the Override Redirect flag (Xlib)
+       , pickBroadest     = False   -- choose widest display (multi-monitor)
+       , persistent       = True    -- enable/disable hiding (True = disabled)
+
+       -- plugins
+       --   Numbers can be automatically colored according to their value. xmobar
+       --   decides color based on a three-tier/two-cutoff system, controlled by
+       --   command options:
+       --     --Low sets the low cutoff
+       --     --High sets the high cutoff
+       --
+       --     --low sets the color below --Low cutoff
+       --     --normal sets the color between --Low and --High cutoffs
+       --     --High sets the color above --High cutoff
+       --
+       --   The --template option controls how the plugin is displayed. Text
+       --   color can be set by enclosing in <fc></fc> tags. For more details
+       --   see http://projects.haskell.org/xmobar/#system-monitor-plugins.
+       , commands = [
+                      -- Time and date
+                      Run Date "<fc=#46d9ff>  %b %d %Y (%H:%M)</fc>" "date" 50
+
+                      -- battery monitor
+                    , Run Battery       [ "--template" , "<fc=#b194bb>Batt: <acstatus></fc>"
+                                        -- , "--Low"      , "10"        -- units: %
+                                        -- , "--High"     , "80"        -- units: %
+                                        -- , "--low"      , "darkred"
+                                        -- , "--normal"   , "darkorange"
+                                        -- , "--high"     , "darkgreen"
+
+                                        , "--" -- battery specific options
+                                                  -- discharging status
+                                                  , "-o"	, "<left>% (<timeleft>)"
+                                                  -- AC "on" status
+                                                  , "-O"	, "Charging"
+                                                  -- charged status
+                                                  , "-i"	, "Charged"
+                                        ] 50
+
+                      -- Network up and down
+                    , Run Network "wlp3s0" ["-t", " <rx>kb   <tx>kb"] 20
+
+                    -- network activity monitor (dynamic interface resolution)
+                    , Run DynNetwork     [ "--template" , "<fc=#98be65>  <tx>kB/s  <rx>kB/s</fc>"
+                                         -- , "--Low"      , "1000"       -- units: B/s
+                                         -- , "--High"     , "5000"       -- units: B/s
+                                         -- , "--low"      , "green"
+                                         -- , "--normal"   , "orange"
+                                         -- , "--high"     , "red"
+                                         ] 10
+
+                      -- cpu activity monitor
+                    , Run MultiCpu       [ "--template" , "<fc=#ecbe7b>  <total0>%|<total1>%</fc>"
+                                         , "--Low"      , "50"         -- units: %
+                                         , "--High"     , "75"         -- units: %
+                                         -- , "--low"      , "green"
+                                         -- , "--normal"   , "orange"
+                                         , "--high"     , "kred"
+                                         ] 10
+
+                      -- memory usage monitor
+                    , Run Memory         [ "--template" ,"<fc=#b3afc2>  <used>M (<usedratio>%)</fc>"
+                                          -- , "--Low"      , "20"        -- units: %
+                                          -- , "--High"     , "90"        -- units: %
+                                          -- , "--low"      , "green"
+                                          -- , "--normal"   , "orange"
+                                          -- , "--high"     , "red"
+                                          ] 10
+
+                    -- cpu core temperature monitor
+                    , Run CoreTemp       [ "--template" , "<fc=#ff6c6b> <core0>°C|<core1>°C</fc>"
+                                         , "--Low"      , "70"        -- units: °C
+                                         , "--High"     , "80"        -- units: °C
+                                         -- , "--low"      , "green"
+                                         -- , "--normal"   , "orange"
+                                         , "--high"     , "red"
+                                         ] 50
+
+                      -- Disk space free
+                    , Run DiskU [("/", "<fc=#51afef>  <free> free</fc>")] [] 60
+
+                      --  Runs a standard shell command 'uname -r' to get kernel version <
+                    , Run Com "uname" ["-r"] "" 3600
+
+                    -- keyboard layout indicator
+                    , Run Kbd            [ ("us(dvorak)" , "<fc=#00008B>DV</fc>")
+                                         , ("us"         , "<fc=#8B0000>US</fc>")
+                                         ]
+
+                      -- Prints out the left side items such as workspaces, layout, etc.
+                      -- The workspaces are 'clickable' in my configs.
+                    , Run UnsafeStdinReader
+                    ]
+       }

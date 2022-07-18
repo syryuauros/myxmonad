@@ -1,0 +1,3 @@
+#+title: My Xmonad + Xmobar config
+
+This flake exports a [[https://github.com/nix-community/home-manager][home-manager]] module to set up my [[https://xmonad.org/][xmonad]] + [[https://codeberg.org/xmobar/xmobar][xmobar]] configuration.
