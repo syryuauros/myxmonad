@@ -48,6 +48,10 @@ in {
 
     xdg.configFile."xmobar/xmobarrc".source = xmobarrc;
 
+    home.packages = with pkgs; [
+      xmobar
+    ];
+
   };
 
 }
