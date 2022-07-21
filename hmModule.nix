@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+wallpapers: { config, lib, pkgs, ... }:
 
 with lib;
 
@@ -31,6 +31,7 @@ in {
         '';
 
       };
+
     };
   };
 
@@ -50,7 +51,15 @@ in {
 
     home.packages = with pkgs; [
       xmobar
+      dmenu
     ];
+
+    services.random-background = {
+      enable = true;
+      imageDirectory = "${wallpapers}";
+      display = "fill";
+      interval = "1h";
+    };
 
   };
 

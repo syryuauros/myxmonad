@@ -85,7 +85,24 @@
         "nixpkgs": [
           "haedosa",
           "nixpkgs"
-        ]
+        ],
+        "wallpapers": "wallpapers"
+      }
+    },
+    "wallpapers": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1658397002,
+        "narHash": "sha256-rwcRPbhNykSqLpwAEJRe+02vvzgR2arxwLck7k+bvkE=",
+        "owner": "jjdosa",
+        "repo": "wallpapers",
+        "rev": "ed3c77c10fe1f0fa47b8e8b5cc0efeeaf6aa3759",
+        "type": "github"
+      },
+      "original": {
+        "owner": "jjdosa",
+        "repo": "wallpapers",
+        "type": "github"
       }
     }
   },
