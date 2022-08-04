@@ -52,6 +52,7 @@ in {
     home.packages = with pkgs; [
       xmobar
       dmenu
+      arandr
     ];
 
     services.random-background = {
