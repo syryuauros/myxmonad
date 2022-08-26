@@ -2,7 +2,7 @@
   description = "my xmonad configurations";
 
   inputs = {
-    haedosa.url = "github:haedosa/flakes/22.05";
+    haedosa.url = "github:haedosa/flakes";
     nixpkgs.follows = "haedosa/nixpkgs";
     home-manager.follows = "haedosa/home-manager";
     wallpapers.url = "github:jjdosa/wallpapers";
