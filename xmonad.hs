@@ -795,6 +795,7 @@ myKeys home conf =
     , ("<XF86AudioRaiseVolume>"  , spawn "amixer set Master 5%+ unmute")
     , ("<XF86MonBrightnessUp>"   , spawn "xbacklight -inc 5")
     , ("<XF86MonBrightnessDown>" , spawn "xbacklight -dec 5")
+    , ("<XF86Favorites>"         , spawn "i3lock-fancy-rapid 5 pixel")
     , ("<XF86HomePage>"          , spawn myBrowser)
     , ("<XF86Search>"            , safeSpawn myBrowser ["https://www.duckduckgo.com/"])
     , ("<XF86Mail>"              , spawn myEmail)
