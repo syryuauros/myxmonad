@@ -9,14 +9,22 @@
     wallpapers.flake = false;
   };
 
-  outputs = inputs:
+  outputs = inputs@{ self, ... }:
     let
       system = "x86_64-linux";
-      pkgs = import inputs.nixpkgs { inherit system; };
-    in {
+      pkgs = import inputs.nixpkgs {
+        inherit system;
+        overlays = [ self.overlay ];
+      };
+    in with pkgs; {
+      overlay = import ./overlay.nix;
       hmModule = import ./hmModule.nix inputs.wallpapers;
-      devShell.${system} =
-        pkgs.mkShell { buildInputs = with pkgs; [ xmonad-with-packages ]; };
+      devShell.${system} = mkShell { buildInputs = with pkgs; [ xmonad-with-packages ]; };
+      packages.${system}.default = xmonadBin;
+      apps.${system}.default = {
+        type = "app";
+        program = "${xmonad-restart}/bin/xmonad-restart";
+      };
     };
 
 }
