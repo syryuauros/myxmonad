@@ -128,9 +128,12 @@ myTerminal = "alacritty"   -- Sets default terminal
 -- myTerminal = "kitty"   -- Sets default terminal
 
 myBrowser :: String
-myBrowser = "firefox"
+myBrowser = "brave"
+-- myBrowser = "firefox"
 -- myBrowser = "qutebrowser"
--- myBrowser = "brave"
+
+myScreenLocker :: String
+myScreenLocker = "i3lock-fancy-rapid 5 pixel"
 
 myBrowser' :: String -> String
 myBrowser' url = concat [myBrowser, " ", url]
@@ -795,9 +798,11 @@ myKeys home conf =
     , ("<XF86AudioRaiseVolume>"  , spawn "amixer set Master 5%+ unmute")
     , ("<XF86MonBrightnessUp>"   , spawn "xbacklight -inc 5")
     , ("<XF86MonBrightnessDown>" , spawn "xbacklight -dec 5")
-    , ("<XF86Favorites>"         , spawn "i3lock-fancy-rapid 5 pixel")
+    , ("<XF86Favorites>"         , spawn myScreenLocker)
+    , ("<F12>"                   , spawn myScreenLocker)
+    , ("M-M1-C-S-l"              , spawn myScreenLocker)
     , ("<XF86HomePage>"          , spawn myBrowser)
-    , ("<XF86Search>"            , safeSpawn myBrowser ["https://www.duckduckgo.com/"])
+    , ("<XF86Search>"            , safeSpawn myBrowser ["https://hoogle.hackage.org"])
     , ("<XF86Mail>"              , spawn myEmail)
     , ("<XF86Calculator>"        , runOrRaise "qalculate-gtk" (resource =? "qalculate-gtk"))
     , ("<XF86Eject>"             , spawn "toggleeject")
@@ -812,7 +817,8 @@ myKeys home conf =
     ++ [("M-" ++ m ++ k, screenWorkspace sc >>= flip whenJust (windows . f))
          | (k,sc) <- zip ["q", "w", "e"] [0..]
          , (f, m) <- [(W.view, ""), (W.shift, "S-")]
-         ]
+       ]
+
     -- The following lines are needed for named scratchpads.
     where
       myPromptSearch = let
