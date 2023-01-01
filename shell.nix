@@ -9,5 +9,6 @@ mkShell {
   buildInputs = [
     myghc
     haskellPackages.haskell-language-server
+    haskellPackages.ghcid
   ];
 }
