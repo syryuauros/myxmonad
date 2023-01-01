@@ -135,9 +135,6 @@ myBrowser = "brave"
 myScreenLocker :: String
 myScreenLocker = "i3lock-fancy-rapid 5 pixel"
 
-myBrowser' :: String -> String
-myBrowser' url = concat [myBrowser, " ", url]
-
 myEditor :: String
 myEditor = "emacsclient -c -a 'emacs --fg-daemon'"  -- Sets emacs as editor for tree select
 -- myEditor = myTerminal ++ " -e vim "    -- Sets vim as editor for tree select
@@ -153,10 +150,6 @@ myRofi = "rofi -modi drun,ssh,window -show drun -show-icons"
 
 myDmenu :: String
 myDmenu = "dmenu_run"
-
-screenLocker :: String
--- screenLocker = "yes | mylockscreen-1366"
-screenLocker = "xscreensaver & xscreensaver-command -activate"
 
 myTrayer :: String
 myTrayer =  "trayer --edge top --align right --widthtype request --padding 1 "
@@ -181,103 +174,6 @@ myStartupHook = do
          spawn "picom -CGcf -i 0.7 -I 1.0 -O 1.0 -D 0 --detect-client-leader"
          <+> setWMName "LG3D"
 
-
-myXPConfig :: XPConfig
-myXPConfig = def
-      { font                = myFont
-      , bgColor             = "#282c34"
-      , fgColor             = "#bbc2cf"
-      , bgHLight            = "#c792ea"
-      , fgHLight            = "#000000"
-      , borderColor         = "#535974"
-      , promptBorderWidth   = 0
-      , promptKeymap        = dtXPKeymap
-      , position            = Top
-      -- , position            = CenteredAt { xpCenterY = 0.3, xpWidth = 0.3 }
-      , height              = 23
-      , historySize         = 256
-      , historyFilter       = id
-      , defaultText         = []
-      , autoComplete        = Just 100000  -- set Just 100000 for .1 sec
-      , showCompletionOnTab = False
-      -- , searchPredicate     = isPrefixOf
-      , searchPredicate     = fuzzyMatch
-      , defaultPrompter     = map toUpper  -- change prompt to UPPER
-      -- , defaultPrompter     = unwords . map reverse . words  -- reverse the prompt
-      -- , defaultPrompter     = drop 5 .id (++ "XXXX: ")  -- drop first 5 chars of prompt and add XXXX:
-      , alwaysHighlight     = True
-      , maxComplRows        = Nothing      -- set to 'Just 5' for 5 rows
-      }
-
-
-calcPrompt c ans =
-    inputPrompt c (trim ans) ?+ \input ->
-        liftIO(runProcessWithInput "qalc" [input] "") >>= calcPrompt c
-    where
-        trim  = f . f
-            where f = reverse . dropWhile isSpace
-
-editPrompt :: String -> X ()
-editPrompt home = do
-    str <- inputPrompt cfg "EDIT: ~/"
-    case str of
-        Just s  -> openInEditor s
-        Nothing -> pure ()
-  where
-    cfg = myXPConfig { defaultText = "" }
-
-openInEditor :: String -> X ()
-openInEditor path =
-    safeSpawn "emacsclient" ["-c", "-a", "emacs", path]
-
-scrotPrompt :: String -> Bool -> X ()
-scrotPrompt home select = do
-    str <- inputPrompt cfg "~/scrot/"
-    case str of
-        Just s  -> spawn $ printf "sleep 0.3 && scrot %s '%s' -e 'mv $f ~/scrot'" mode s
-        Nothing -> pure ()
-  where
-    mode = if select then "--select" else "--focused"
-    cfg = myXPConfig { defaultText = "" }
-
-dtXPKeymap :: M.Map (KeyMask,KeySym) (XP ())
-dtXPKeymap = M.fromList $
-     map (first $ (,) controlMask)      -- control + <key>
-     [ (xK_z, killBefore)               -- kill line backwards
-     , (xK_k, killAfter)                -- kill line forwards
-     , (xK_a, startOfLine)              -- move to the beginning of the line
-     , (xK_e, endOfLine)                -- move to the end of the line
-     , (xK_m, deleteString Next)        -- delete a character foward
-     , (xK_k, moveCursor Prev)          -- move cursor forward
-     , (xK_j, moveCursor Next)          -- move cursor backward
-     , (xK_BackSpace, killWord Prev)    -- kill the previous word
-     , (xK_y, pasteString)              -- paste a string
-     , (xK_g, quit)                     -- quit out of prompt
-     , (xK_bracketleft, quit)
-     ]
-     ++
-     map (first $ (,) altMask)          -- meta key + <key>
-     [ (xK_BackSpace, killWord Prev)    -- kill the prev word
-     , (xK_f, moveWord Next)            -- move a word forward
-     , (xK_b, moveWord Prev)            -- move a word backward
-     , (xK_d, killWord Next)            -- kill the next word
-     , (xK_n, moveHistory W.focusUp')   -- move up thru history
-     , (xK_p, moveHistory W.focusDown') -- move down thru history
-     ]
-     ++
-     map (first $ (,) 0) -- <key>
-     [ (xK_Return, setSuccess True >> setDone True)
-     , (xK_KP_Enter, setSuccess True >> setDone True)
-     , (xK_BackSpace, deleteString Prev)
-     , (xK_Delete, deleteString Next)
-     , (xK_Left, moveCursor Prev)
-     , (xK_Right, moveCursor Next)
-     , (xK_Home, startOfLine)
-     , (xK_End, endOfLine)
-     , (xK_Down, moveHistory W.focusUp')
-     , (xK_Up, moveHistory W.focusDown')
-     , (xK_Escape, quit)
-     ]
 
 
 
@@ -558,18 +454,8 @@ main = do
     xmproc1 <- spawnPipe "xmobar -x 1 $HOME/.config/xmobar/xmobarrc"
     xmproc2 <- spawnPipe "xmobar -x 2 $HOME/.config/xmobar/xmobarrc"
     xmonad $ let
-      conf = ewmh def
+      conf = ewmhFullscreen def
         { manageHook = myManageHook
-          -- manageHook = ( isFullscreen --> doFullFloat ) <+> myManageHook <+> manageDocks
-        -- Run xmonad commands from command line with "xmonadctl command". Commands include:
-        -- shrink, expand, next-layout, default-layout, restart-wm, xterm, kill, refresh, run,
-        -- focus-up, focus-down, swap-up, swap-down, swap-master, sink, quit-wm. You can run
-        -- "xmonadctl 0" to generate full list of commands written to ~/.xsession-errors.
-        -- To compile xmonadctl: ghc -dynamic xmonadctl.hs
-        , handleEventHook    =   serverModeEventHookCmd
-                             <+> serverModeEventHook
-                             <+> serverModeEventHookF "XMONAD_PRINT" (io . putStrLn)
-                             <+> docksEventHook
         , modMask            = myModMask
         , terminal           = myTerminal
         , startupHook        = myStartupHook
@@ -649,12 +535,12 @@ myKeys home conf =
     , ("M-a w"   , spawn "dm-wifi.sh")
     , ("M-a t"   , spawn myTrayer)
     , ("M-a y"   , spawn "killall trayer")
-    , ("M-a l"   , spawn screenLocker)
+    , ("M-a l"   , spawn myScreenLocker)
     , ("M-a c"   , spawn "mkdir -p ~/captures; flameshot full -p ~/captures/")
     , ("M-a f"   , spawn "nautilus")
 
     , ("M-s"     , spawn "dm-search.sh")
-    , ("M-b"     , spawn "dm-bookmarks.sh")
+    , ("M-b"     , spawn myBrowser)
     , ("M-v"     , spawn "clipmenu")
     , ("M-c"     , spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
     , ("M-d"     , spawn myEditor)
@@ -809,10 +695,6 @@ myKeys home conf =
     , ("<XF86Eject>"             , spawn "toggleeject")
     , ("<Print>"                 , spawn "scrotd 0")
     ]
-    -- Appending search engine prompts to keybindings list.
-    -- Look at "search engines" section of this config for values for "k".
-    ++ [("M-S-s " ++ k, mySelectSearch f) | (k,f) <- searchList ]
-    ++ [("M-C-s " ++ k, myPromptSearch f) | (k,f) <- searchList ]
 
     -- screen view and shift
     ++ [("M-" ++ m ++ k, screenWorkspace sc >>= flip whenJust (windows . f))
@@ -822,48 +704,5 @@ myKeys home conf =
 
     -- The following lines are needed for named scratchpads.
     where
-      myPromptSearch = let
-          myXPConfig' = myXPConfig { autoComplete = Nothing
-                                   , defaultText = "" }
-        in S.promptSearchBrowser myXPConfig' myBrowser
-      mySelectSearch = S.selectSearchBrowser myBrowser
       nonNSP          = WSIs (return (\ws -> W.tag ws /= "NSP"))
       nonEmptyNonNSP  = WSIs (return (\ws -> isJust (W.stack ws) && W.tag ws /= "NSP"))
-
--- This is the list of search engines that I want to use. Some are from
--- XMonad.Actions.Search, and some are the ones that I added above.
-searchList :: [(String, S.SearchEngine)]
-searchList = [ ("S-a", archwiki)
-             , ("d", S.duckduckgo)
-             , ("e", ebay)
-             , ("g", S.google)
-             , ("i", S.images)
-             , ("n", news)
-             , ("r", reddit)
-             , ("s", S.stackage)
-             , ("t", S.thesaurus)
-             , ("v", S.vocabulary)
-             , ("b", S.wayback)
-             , ("u", urban)
-             , ("w", S.wikipedia)
-             , ("y", S.youtube)
-             , ("S-y", yacy)
-             , ("a", S.amazon)
-             , ("l", libgen)
-             , ("p", nixosPkgs)
-             , ("o", nixosOpts)
-             , ("h", S.hoogle)
-             , ("S-h", hackage)
-             ]
-  where
-    archwiki, ebay, news, reddit, urban, yacy, libgen, nixosPkgs, nixosOpts :: S.SearchEngine
-    archwiki  = S.searchEngine "archwiki" "https://wiki.archlinux.org/index.php?search="
-    ebay      = S.searchEngine "ebay" "https://www.ebay.com/sch/i.html?_nkw="
-    news      = S.searchEngine "news" "https://news.google.com/search?q="
-    reddit    = S.searchEngine "reddit" "https://www.reddit.com/search/?q="
-    urban     = S.searchEngine "urban" "https://www.urbandictionary.com/define.php?term="
-    yacy      = S.searchEngine "yacy" "http://localhost:8090/yacysearch.html?query="
-    libgen    = S.searchEngine "libgen" "http://libgen.rs/search.php?req="
-    nixosPkgs = S.searchEngine "nixosPkgs" "https://search.nixos.org/packages?channel=unstable&query="
-    nixosOpts = S.searchEngine "nixosOpts" "https://search.nixos.org/options?channel=unstable&query="
-    hackage   = S.searchEngine "hackage" "https://hackage.haskell.org/packages/search?terms="
