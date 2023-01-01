@@ -178,7 +178,8 @@ myStartupHook = do
           -- spawnOnce myTrayer
           -- spawnOnce "kak -d -s mysession &"  -- kakoune daemon for better performance
           -- spawnOnce "urxvtd -q -o -f &"      -- urxvt daemon for better performance
-          setWMName "LG3D"
+         spawn "picom -CGcf -i 0.7 -I 1.0 -O 1.0 -D 0 --detect-client-leader"
+         <+> setWMName "LG3D"
 
 
 myXPConfig :: XPConfig

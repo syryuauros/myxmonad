@@ -53,6 +53,7 @@ in {
       xmobar
       dmenu
       arandr
+      picom
     ];
 
     services.random-background = {
