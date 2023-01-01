@@ -1,18 +1,18 @@
 #+title: My Xmonad + Xmobar config
 
-This flake exports a [[https://github.com/nix-community/home-manager][home-manager]] module to set up my [[https://xmonad.org/][xmonad]] + [[https://codeberg.org/xmobar/xmobar][xmobar]] configuration.
+This flake exports a [[https://github.com/nix-community/home-manager][home-manager]] module to set up my [[https://xmonad.org/][xmonad]] + [[https://codeberg.org/xmobar/xmobar][xmobar]]
+configuration.
 
-* How to test out my Xmonad configuration
+Import this snippet to your home-manger configuration file to use this module.
+#+begin_src nix
 
-In order to test out the this xmonad configuration before installing it to system-wise, run
+{ inputs, pkgs, ... }:
 
-#+begin_src sh
-$ nix run
-#+end_src
+{
 
-or, equivalently,
+  imports = [ inputs.myxmonad.homeManagerModules.default ];
 
-#+begin_src sh
-$ nix build
-$ result/bin/xmonad-x86_64-linux --restart
+  mysystem.windowManager.xmonad.enable = true;
+
+}
 #+end_src

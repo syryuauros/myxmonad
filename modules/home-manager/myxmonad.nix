@@ -1,4 +1,4 @@
-wallpapers: { config, lib, pkgs, ... }:
+inputs: { config, lib, pkgs, ... }:
 
 with lib;
 
@@ -6,10 +6,7 @@ let
 
   cfg = config.mysystem.windowManager.xmonad;
 
-  xmobarrc = pkgs.substitute {
-    src = ./xmobarrc;
-    replacements = [[ "--replace" "@iconRoot@" "${./xpm}" ]];
-  };
+  xmobarrc = pkgs.callPackage ../../packages/xmobar {};
 
 in {
 
@@ -18,7 +15,7 @@ in {
       enable = mkEnableOption "xmonad window manager";
       config = mkOption {
         type = types.nullOr types.path;
-        default = ./xmonad.hs;
+        default = ../../xmonad.hs;
         example = literalExpression ''
           pkgs.writeText "xmonad.hs" '''
             import XMonad
@@ -29,7 +26,10 @@ in {
                 }
           '''
         '';
-
+      };
+      xmobarrc = mkOption {
+        type = types.nullOr types.path;
+        default = xmobarrc;
       };
 
     };
@@ -47,7 +47,7 @@ in {
     programs.home-manager.enable = true;
     xdg.enable = true;
 
-    xdg.configFile."xmobar/xmobarrc".source = xmobarrc;
+    xdg.configFile."xmobar/xmobarrc".source = mkIf (cfg.xmobarrc != null) cfg.xmobarrc;
 
     home.packages = with pkgs; [
       xmobar
@@ -57,7 +57,7 @@ in {
 
     services.random-background = {
       enable = true;
-      imageDirectory = "${wallpapers}";
+      imageDirectory = "${inputs.wallpapers}";
       display = "fill";
       interval = "1h";
     };

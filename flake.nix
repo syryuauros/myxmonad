@@ -2,29 +2,31 @@
   description = "my xmonad configurations";
 
   inputs = {
-    haedosa.url = "github:haedosa/flakes";
-    nixpkgs.follows = "haedosa/nixpkgs";
-    home-manager.follows = "haedosa/home-manager";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     wallpapers.url = "github:jjdosa/wallpapers";
     wallpapers.flake = false;
   };
 
-  outputs = inputs@{ self, ... }:
-    let
-      system = "x86_64-linux";
-      pkgs = import inputs.nixpkgs {
-        inherit system;
-        overlays = [ self.overlay ];
-      };
-    in with pkgs; {
-      overlay = import ./overlay.nix;
-      hmModule = import ./hmModule.nix inputs.wallpapers;
-      devShell.${system} = mkShell { buildInputs = with pkgs; [ xmonad-with-packages ]; };
-      packages.${system}.default = xmonadBin;
-      apps.${system}.default = {
-        type = "app";
-        program = "${xmonad-restart}/bin/xmonad-restart";
-      };
-    };
+  outputs = inputs@{ nixpkgs, ... }:
+  let
+    inherit (nixpkgs.lib) genAttrs;
+    supportedSystems = [ "x86_64-linux" ];
+    forAllSystems = genAttrs supportedSystems;
+    pkgsFor = system: import ./pkgs.nix { inherit inputs system; };
+  in
+  {
+    homeManagerModules = import ./modules/home-manager inputs;
+
+    packages = forAllSystems (import ./packages inputs);
+
+    devShells = forAllSystems (system: {
+      default = import ./shell.nix { pkgs = pkgsFor system; };
+    });
+
+  };
 
 }
