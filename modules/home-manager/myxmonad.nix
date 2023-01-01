@@ -15,7 +15,7 @@ in {
       enable = mkEnableOption "xmonad window manager";
       config = mkOption {
         type = types.nullOr types.path;
-        default = ../../xmonad.hs;
+        default = ../../xmonad/xmonad.hs;
         example = literalExpression ''
           pkgs.writeText "xmonad.hs" '''
             import XMonad
