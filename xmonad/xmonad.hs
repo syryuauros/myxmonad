@@ -1,8 +1,46 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 
-import XMonad hiding (Tall, (|||))
-import System.Directory
+import XMonad
+    ( mod1Mask,
+      mod4Mask,
+      gets,
+      io,
+      spawn,
+      whenJust,
+      whenX,
+      xmonad,
+      (<&&>),
+      (<+>),
+      (<||>),
+      (=?),
+      appName,
+      className,
+      doFloat,
+      doIgnore,
+      resource,
+      stringProperty,
+      title,
+      screenWorkspace,
+      sendMessage,
+      windows,
+      withFocused,
+      KeyMask,
+      Default(def),
+      Query,
+      WindowSet,
+      X,
+      XConfig(logHook, manageHook, modMask, terminal, startupHook,
+              layoutHook, workspaces, borderWidth, normalBorderColor,
+              focusedBorderColor),
+      XState(windowset),
+      ChangeLayout(NextLayout),
+      Full(Full),
+      IncMasterN(IncMasterN),
+      JumpToLayout(JumpToLayout),
+      Mirror(Mirror),
+      Resize(Expand, Shrink) )
+import System.Directory ( getHomeDirectory )
 import System.IO (hPutStrLn)
 import System.Exit (exitSuccess)
 import qualified XMonad.StackSet as W
@@ -14,34 +52,29 @@ import XMonad.Actions.CycleWS ( moveTo, shiftTo, WSType(..)
                               , shiftPrevScreen, shiftNextScreen
                               , toggleWS
                               )
-import XMonad.Actions.GridSelect
-import XMonad.Actions.MouseResize
+import XMonad.Actions.MouseResize ( mouseResize )
 import XMonad.Actions.SwapPromote (swapHybrid)
 import XMonad.Actions.DwmPromote (dwmpromote)
 import XMonad.Actions.RotSlaves (rotSlavesDown, rotAllDown)
-import qualified XMonad.Actions.TreeSelect as TS
 import XMonad.Actions.WindowGo (runOrRaise)
 import XMonad.Actions.WithAll (sinkAll, killAll)
-import qualified XMonad.Actions.Search as S
-import           XMonad.Actions.SpawnOn                ( manageSpawn
-                                                       , spawnOn
-                                                       )
+import XMonad.Actions.SpawnOn ( manageSpawn, spawnOn )
 
     -- Data
 import Data.Char (isSpace, toUpper)
 import Data.Maybe ( fromJust, isJust )
-import Data.Monoid
+import Data.Monoid ( Endo )
 import qualified Data.Map as M
 
     -- Hooks
 import XMonad.Hooks.DynamicLog (dynamicLogWithPP, wrap, xmobarPP, xmobarColor, shorten, PP(..))
-import XMonad.Hooks.EwmhDesktops  -- for some fullscreen events, also for xcomposite in obs.
-import XMonad.Hooks.FadeInactive
+import XMonad.Hooks.EwmhDesktops ( ewmhFullscreen )  -- for some fullscreen events, also for xcomposite in obs.
+import XMonad.Hooks.FadeInactive ( fadeInactiveLogHook )
 import XMonad.Hooks.ManageDocks (avoidStruts, docksEventHook, manageDocks, ToggleStruts(..))
-import XMonad.Hooks.ServerMode
-import XMonad.Hooks.SetWMName
-import XMonad.Hooks.WorkspaceHistory
+import XMonad.Hooks.SetWMName ( setWMName )
+import XMonad.Hooks.WorkspaceHistory ( workspaceHistoryHook )
 import XMonad.Hooks.RefocusLast
+    ( refocusLastLayoutHook, swapWithLast, toggleFocus )
 import XMonad.Hooks.ManageHelpers            ( (-?>)
                                              , composeOne
                                              , doCenterFloat
@@ -50,35 +83,52 @@ import XMonad.Hooks.ManageHelpers            ( (-?>)
                                              , isFullscreen
                                              , isInProperty
                                              )
-import XMonad.Hooks.InsertPosition           ( Focus(Newer)
-                                                       , Position(Below)
-                                                       , insertPosition
-                                                       )
+import XMonad.Hooks.InsertPosition ( Focus(Newer), Position(Below), insertPosition)
     -- Layouts
 import XMonad.Layout.GridVariants (Grid(Grid))
-import XMonad.Layout.SimplestFloat
-import XMonad.Layout.Spiral
+import XMonad.Layout.SimplestFloat ( simplestFloat )
+import XMonad.Layout.Spiral ( spiral )
 import XMonad.Layout.ResizableTile
-import XMonad.Layout.TwoPane
+    ( MirrorResize(MirrorExpand, MirrorShrink),
+      ResizableTall(ResizableTall) )
 import XMonad.Layout.Tabbed
-import XMonad.Layout.ThreeColumns
-import XMonad.Layout.LayoutCombinators
-import XMonad.Layout.Accordion
+    ( Direction2D(D, L, R, U),
+      shrinkText,
+      addTabs,
+      Theme(inactiveTextColor, fontName, activeColor, inactiveColor,
+            activeBorderColor, inactiveBorderColor, activeTextColor) )
+import XMonad.Layout.ThreeColumns ( ThreeCol(ThreeCol) )
+import XMonad.Layout.LayoutCombinators ( (|||) )
+import XMonad.Layout.Accordion ( Accordion(Accordion) )
 
     -- Layouts modifiers
-import XMonad.Layout.LayoutModifier
+import XMonad.Layout.LayoutModifier ( ModifiedLayout )
 import XMonad.Layout.LimitWindows (limitWindows, increaseLimit, decreaseLimit)
-import XMonad.Layout.Magnifier hiding (magnify)
 import XMonad.Layout.Reflect
+    ( REFLECTX(REFLECTX), REFLECTY(REFLECTY) )
 import XMonad.Layout.MultiToggle (mkToggle, single, EOT(EOT), (??))
 import XMonad.Layout.MultiToggle.Instances (StdTransformers(NBFULL, MIRROR, NOBORDERS))
-import XMonad.Layout.NoBorders
-import XMonad.Layout.Renamed
+import XMonad.Layout.NoBorders ( noBorders, smartBorders )
+import XMonad.Layout.Renamed ( renamed, Rename(Replace) )
 import XMonad.Layout.ShowWName
-import XMonad.Layout.Simplest
+    ( showWName',
+      SWNConfig(swn_color, swn_font, swn_fade, swn_bgcolor) )
+import XMonad.Layout.Simplest ( Simplest(Simplest) )
 import XMonad.Layout.Spacing
+    ( decScreenSpacing,
+      decWindowSpacing,
+      incScreenSpacing,
+      incWindowSpacing,
+      spacingRaw,
+      Border(Border),
+      Spacing )
 import XMonad.Layout.SubLayouts
-import XMonad.Layout.WindowNavigation
+    ( onGroup,
+      pullGroup,
+      subLayout,
+      toSubl,
+      GroupMsg(UnMergeAll, MergeAll, UnMerge) )
+import XMonad.Layout.WindowNavigation ( windowNavigation )
 import qualified XMonad.Layout.BoringWindows as B
 import XMonad.Layout.WindowArranger (windowArrange, WindowArrangerMsg(..))
 import qualified XMonad.Layout.ToggleLayouts as T (toggleLayouts, ToggleLayout(Toggle))
@@ -86,32 +136,20 @@ import qualified XMonad.Layout.MultiToggle as MT (Toggle(..))
 import XMonad.Layout.Groups.Helpers (swapMaster)
 
     -- Prompt
-import XMonad.Prompt
-import XMonad.Prompt.Input
-import XMonad.Prompt.FuzzyMatch
-import XMonad.Prompt.Man
-import XMonad.Prompt.Pass
-import XMonad.Prompt.Shell
-import XMonad.Prompt.Ssh
-import XMonad.Prompt.XMonad
+import XMonad.Prompt ( Direction1D(Next, Prev) )
 import Control.Arrow (first)
 import Control.Monad (replicateM_)
 
-   -- Text
-import Text.Printf
-
-   -- Utilities
 -- Utilities
 import XMonad.Util.EZConfig (additionalKeysP, mkKeymap)
--- import XMonad.Util.NamedScratchpad
-import           XMonad.Util.NamedScratchpad           ( NamedScratchpad(..)
-                                                       , customFloating
-                                                       , defaultFloating
-                                                       , namedScratchpadAction
-                                                       , namedScratchpadManageHook
-                                                       )
+import XMonad.Util.NamedScratchpad ( NamedScratchpad(..)
+                                   , customFloating
+                                   , defaultFloating
+                                   , namedScratchpadAction
+                                   , namedScratchpadManageHook
+                                   )
 import XMonad.Util.Run (runProcessWithInput, safeSpawn, spawnPipe)
-import XMonad.Util.SpawnOnce
+import XMonad.Util.SpawnOnce ( manageSpawn )
 import XMonad.Layout.MultiColumns (multiCol)
 import XMonad.Actions.Submap (submap)
 import XMonad.Layout.HintedTile (HintedTile(HintedTile), Alignment (TopLeft), Orientation (Tall, Wide))
