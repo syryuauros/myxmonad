@@ -203,14 +203,8 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 
 myStartupHook :: X ()
 myStartupHook = do
-          -- spawnOnce "nm-applet &"
-          -- spawnOnce "volumeicon &"
-          -- spawnOnce "emacs --title emacsOnSP --daemon=emacsOnSP"  -- this makes the login time slow
-          -- spawnOnce myTrayer
-          -- spawnOnce "kak -d -s mysession &"  -- kakoune daemon for better performance
-          -- spawnOnce "urxvtd -q -o -f &"      -- urxvt daemon for better performance
-         spawn "picom -CGcf -i 0.7 -I 1.0 -O 1.0 -D 0 --detect-client-leader"
-         <+> setWMName "LG3D"
+  spawn "picom -CGcf -i 0.7 -I 1.0 -O 1.0 -D 0 --detect-client-leader"
+  <+> setWMName "LG3D"
 
 
 
@@ -290,21 +284,6 @@ spirals  = mkLayout
          $ spiral (6/7)
 threeCol = mkLayout $ ThreeCol 1 (3/100) (1/2)
 
--- threeRow = renamed [Replace "threeRow"]
---          $ windowNavigation
---          $ addTabs shrinkText myTabTheme
---          $ B.boringWindows
---          $ subLayout [] (smartBorders Simplest)
---          $ limitWindows 7
---          $ mySpacing' 2
---          -- Mirror takes a layout and rotates it by 90 degrees.
---          -- So we are applying Mirror to the ThreeCol layout.
---          $ Mirror
---          $ ThreeCol 1 (3/100) (1/2)
--- tabs     = renamed [Replace "tabs"]
---          -- I cannot add spacing to this layout because it will
---          -- add spacing between window and tabs which looks bad.
---          $ tabbed shrinkText myTabTheme
 accordion = mkLayout Accordion
 
 -- The layout hook
@@ -340,22 +319,6 @@ clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
   where
     i = fromJust $ M.lookup ws $ M.fromList $ zip myWorkspaces [1..]
 
-------------------------------------------------------------------------
--- Manage Hook:
-
--- Execute arbitrary actions and WindowSet manipulations when managing
--- a new window. You can use this to, for example, always float a
--- particular program, or have a client always appear on a particular
--- workspace.
---
--- To find the property name associated with a program, use
--- > xprop | grep WM_CLASS
--- and click on the client you're interested in.
---
--- To match on the WM_NAME, you can use 'title' in the same way that
--- 'className' and 'resource' are used below.
---
-
 type AppName      = String
 type AppTitle     = String
 type AppClassName = String
@@ -384,6 +347,7 @@ termSP     = NameApp  "termSP"               (myTerminal ++ " --class termSP")
 htopSP     = NameApp  "htopSP"               (myTerminal ++ " --class htopSP -e htop")
 editorSP   = TitleApp "editorSP"             myEditorOnScratchPad
 uimprefgtk = NameApp  "uim-pref-gtk"         "uim-pref-gtk"
+
 
 myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
 myManageHook = manageApps <+> manageSpawn <+> manageScratchpads <+> manageDocks
@@ -449,40 +413,6 @@ scratchpadApp app = NS (getAppName app) (getAppCommand app) (isInstance app) spF
 runScratchpadApp = namedScratchpadAction myScratchPads . getAppName
 
 myScratchPads = scratchpadApp <$> [ termSP, htopSP, editorSP, scr, spotify ]
-
--- myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
--- myManageHook = composeAll
---      -- using 'doShift ( myWorkspaces !! 7)' sends program to workspace 8!
---      -- I'm doing it this way because otherwise I would have to write out the full
---      -- name of my workspaces, and the names would very long if using clickable workspaces.
---      [
---        className  =? "Gimp"                           --> doFloat
---      -- , title      =? "Mozilla Firefox"                --> doShift ( myWorkspaces !! 1 )
---      , title      =? "Oracle VM VirtualBox Manager"   --> doFloat
---      , className  =? "VirtualBox Manager"             --> doShift  ( myWorkspaces !! 4 )
---      , (className =? "firefox" <&&> resource =? "Dialog") --> doFloat  -- Float Firefox Dialog
---      ] <+> namedScratchpadManageHook myScratchPads
-
--- myScratchPads :: [NamedScratchpad]
--- myScratchPads = [ NS "terminal" spawnTerm findTerm myFloat
---                 , NS "emacs"    spawnEmacs findEmacs myFloat
---                 , NS "htop"     spawnHtop findHtop myFloat
---                 ]
---   where
---     spawnTerm  = myTerminal ++ " --class termOnSP"
---     spawnHtop  = myTerminal ++ " --class htopOnSP -e htop"
---     spawnEmacs = myEditorOnScratchPad
---     findTerm   = appName =? "termOnSP"
---     findHtop   = appName =? "htopOnSP"
---     findEmacs  = title   =? "emacsOnSP"
---     myFloat = customFloating $ W.RationalRect l t w h
---                where
---                  h = 0.9
---                  w = 0.9
---                  t = (1.0 - h)/2
---                  l = (1.0 - w)/2
-
-------------------------------------------------------------------------
 
 
 main :: IO ()
