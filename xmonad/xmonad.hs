@@ -180,9 +180,6 @@ myEditor = "emacsclient -c -a 'emacs --fg-daemon'"  -- Sets emacs as editor for 
 myEmail :: String
 myEmail = "emacsclient -c -a emacs --eval '(notmuch)'"
 
-myEditorOnScratchPad :: String
-myEditorOnScratchPad = "emacsclient -s editorSP -c -a 'emacs --title editorSP --fg-daemon=editorSP'"
-
 myRofi :: String
 myRofi = "rofi -modi drun,ssh,window -show drun -show-icons"
 
@@ -332,10 +329,6 @@ evince     = ClassApp "Evince"               "evince"
 gimp       = ClassApp "Gimp"                 "gimp"
 nautilus   = ClassApp "Org.gnome.Nautilus"   "nautilus"
 pavuctrl   = ClassApp "Pavucontrol"          "pavucontrol"
-termSP     = ClassApp "termSP"               (myTerminal ++ " --class termSP")
-htopSP     = ClassApp "htopSP"               (myTerminal ++ " --class htopSP -e htop")
-btmSP      = ClassApp "btm"                  (myTerminal ++ " --class btmSP")
-editorSP   = TitleApp "editorSP"             myEditorOnScratchPad
 
 
 myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
@@ -384,18 +377,24 @@ isInstance (TitleApp t _) = title =? t
 isInstance (NameApp n _)  = appName =? n
 
 
-scratchpadApp :: App -> NamedScratchpad
-scratchpadApp app = NS (getName app) (getCommand app) (isInstance app) spFloating
+myScratchPads = putCenter <$> scratchpadApps
   where
-    spFloating = customFloating $ W.RationalRect l t w h
-                       where
-                         h = 0.9
-                         w = 0.9
-                         t = (1.0 - h)/2
-                         l = (1.0 - w)/2
+    scratchpadApps =
+      [ ClassApp "termSP"    (myTerminal ++ " --class termSP")
+      , ClassApp "htopSP"    (myTerminal ++ " --class htopSP -e htop")
+      , ClassApp "btmSP"     (myTerminal ++ " --class btmSP -e btm")
+      , TitleApp "editorSP"  "emacsclient -s editorSP -c -a 'emacs --title editorSP --fg-daemon=editorSP'"
+      ]
 
-
-myScratchPads = scratchpadApp <$> [ termSP, htopSP, editorSP, btmSP ]
+    putCenter :: App -> NamedScratchpad
+    putCenter app = NS (getName app) (getCommand app) (isInstance app) centerFloating
+      where
+        centerFloating = customFloating $ W.RationalRect l t w h
+                          where
+                            h = 0.9
+                            w = 0.9
+                            t = (1.0 - h)/2
+                            l = (1.0 - w)/2
 
 
 main :: IO ()
