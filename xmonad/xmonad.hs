@@ -319,88 +319,73 @@ clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
   where
     i = fromJust $ M.lookup ws $ M.fromList $ zip myWorkspaces [1..]
 
-type AppName      = String
-type AppTitle     = String
-type AppClassName = String
-type AppCommand   = String
 
 data App
-  = ClassApp AppClassName AppCommand
-  | TitleApp AppTitle AppCommand
-  | NameApp AppName AppCommand
+  = ClassApp { getName :: String, getCommand :: String}
+  | TitleApp { getName :: String, getCommand :: String}
+  | NameApp { getName :: String, getCommand :: String}
   deriving Show
 
 audacious  = ClassApp "Audacious"            "audacious"
-btm        = TitleApp "btm"                  "alacritty -t btm -e btm --color gruvbox --default_widget_type proc"
-calendar   = ClassApp "Gnome-calendar"       "gnome-calendar"
 eog        = NameApp  "eog"                  "eog"
 evince     = ClassApp "Evince"               "evince"
 gimp       = ClassApp "Gimp"                 "gimp"
 nautilus   = ClassApp "Org.gnome.Nautilus"   "nautilus"
-office     = ClassApp "libreoffice-draw"     "libreoffice-draw"
 pavuctrl   = ClassApp "Pavucontrol"          "pavucontrol"
-scr        = ClassApp "SimpleScreenRecorder" "simplescreenrecorder"
-spotify    = ClassApp "Spotify"              "myspotify"
-vlc        = ClassApp "Vlc"                  "vlc"
-yad        = ClassApp "Yad"                  "yad --text-info --text 'XMonad'"
-termSP     = NameApp  "termSP"               (myTerminal ++ " --class termSP")
-htopSP     = NameApp  "htopSP"               (myTerminal ++ " --class htopSP -e htop")
+termSP     = ClassApp "termSP"               (myTerminal ++ " --class termSP")
+htopSP     = ClassApp "htopSP"               (myTerminal ++ " --class htopSP -e htop")
+btmSP      = ClassApp "btm"                  (myTerminal ++ " --class btmSP")
 editorSP   = TitleApp "editorSP"             myEditorOnScratchPad
-uimprefgtk = NameApp  "uim-pref-gtk"         "uim-pref-gtk"
 
 
 myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
 myManageHook = manageApps <+> manageSpawn <+> manageScratchpads <+> manageDocks
+ where
+  manageScratchpads = namedScratchpadManageHook myScratchPads
+
+
+manageApps = composeOne
+  [ (className =? "Org.gnome.Nautilus")      -?> doFloat
+  , match [ gimp ]                           -?> doCenterFloat
+  , match [ audacious
+          , eog
+          , nautilus
+          , pavuctrl
+          ]                                  -?> doCenterFloat
+  , match [ evince ]                         -?> doFullFloat
+  , resource =? "desktop_window"             -?> doIgnore
+  , resource =? "kdesktop"                   -?> doIgnore
+  , anyOf [ isBrowserDialog
+          , isFileChooserDialog
+          , isDialog
+          , isPopup
+          , isSplash
+          ]                                  -?> doCenterFloat
+  , isFullscreen                             -?> doFullFloat
+  , pure True                                -?> tileBelow
+  ]
  where
   isBrowserDialog     = isDialog <&&> className =? "Brave-browser"
   isFileChooserDialog = isRole =? "GtkFileChooserDialog"
   isPopup             = isRole =? "pop-up"
   isSplash            = isInProperty "_NET_WM_WINDOW_TYPE" "_NET_WM_WINDOW_TYPE_SPLASH"
   isRole              = stringProperty "WM_WINDOW_ROLE"
-  tileBelow           = insertPosition Below Newer
-  doCalendarFloat     = customFloating (W.RationalRect (11 / 15) (1 / 48) (1 / 8) (1 / 8))
-  manageScratchpads   = namedScratchpadManageHook myScratchPads
   anyOf :: [Query Bool] -> Query Bool
   anyOf = foldl (<||>) (pure False)
   match :: [App] -> Query Bool
   match = anyOf . fmap isInstance
-  manageApps = composeOne
-    [ isInstance calendar                      -?> doCalendarFloat
-    , match [ gimp, office ]                   -?> doFloat
-    , match [ audacious
-            , eog
-            , nautilus
-            , pavuctrl
-            , uimprefgtk
-            , scr
-            ]                                  -?> doCenterFloat
-    , match [ btm, evince, spotify, vlc, yad ] -?> doFullFloat
-    , resource =? "desktop_window"             -?> doIgnore
-    , resource =? "kdesktop"                   -?> doIgnore
-    , anyOf [ isBrowserDialog
-            , isFileChooserDialog
-            , isDialog
-            , isPopup
-            , isSplash
-            ]                                  -?> doCenterFloat
-    , isFullscreen                             -?> doFullFloat
-    , pure True                                -?> tileBelow
-    ]
+  tileBelow           = insertPosition Below Newer
+  doCalendarFloat     = customFloating (W.RationalRect (11 / 15) (1 / 48) (1 / 8) (1 / 8))
+
 
 isInstance :: App -> Query Bool
 isInstance (ClassApp c _) = className =? c
 isInstance (TitleApp t _) = title =? t
 isInstance (NameApp n _)  = appName =? n
 
-getNameCommand (ClassApp n c) = (n, c)
-getNameCommand (TitleApp n c) = (n, c)
-getNameCommand (NameApp  n c) = (n, c)
-
-getAppName    = fst . getNameCommand
-getAppCommand = snd . getNameCommand
 
 scratchpadApp :: App -> NamedScratchpad
-scratchpadApp app = NS (getAppName app) (getAppCommand app) (isInstance app) spFloating
+scratchpadApp app = NS (getName app) (getCommand app) (isInstance app) spFloating
   where
     spFloating = customFloating $ W.RationalRect l t w h
                        where
@@ -410,9 +395,7 @@ scratchpadApp app = NS (getAppName app) (getAppCommand app) (isInstance app) spF
                          l = (1.0 - w)/2
 
 
-runScratchpadApp = namedScratchpadAction myScratchPads . getAppName
-
-myScratchPads = scratchpadApp <$> [ termSP, htopSP, editorSP, scr, spotify ]
+myScratchPads = scratchpadApp <$> [ termSP, htopSP, editorSP, btmSP ]
 
 
 main :: IO ()
@@ -542,7 +525,7 @@ myKeys home conf =
 
     -- boring windows, which are skipped in navigation
     , ("M-S-b"        , B.markBoring)
-    , ("M-C-b"        , B.clearBoring)
+    , ("M-M1-b"        , B.clearBoring)
 
     -- Kill windows
     , ("M-S-c"        , kill1)                  -- Kill the currently focused client
@@ -636,9 +619,10 @@ myKeys home conf =
 
 
     -- Scratchpads
-    , ("M-z <Return>" , namedScratchpadAction myScratchPads "termSP")
-    , ("M-z e"        , namedScratchpadAction myScratchPads "editorSP")
-    , ("M-z t"        , namedScratchpadAction myScratchPads "htopSP")
+    , ("M-C-<Return>" , namedScratchpadAction myScratchPads "termSP")
+    , ("M-C-d"        , namedScratchpadAction myScratchPads "editorSP")
+    , ("M-C-b"        , namedScratchpadAction myScratchPads "btmSP")
+    , ("M-C-t"        , namedScratchpadAction myScratchPads "htopSP")
 
 
     , ("M-M1-9" , spawn "xbacklight -inc 5")
