@@ -446,33 +446,6 @@ myKeys home conf =
     , ("M-M1-o", withFocused $ keysResizeWindow (-9, 0) (1,1))
     , ("M-M1-y", withFocused $ keysResizeWindow ( 9, 0) (1,1))
 
-
-    -- SubLayouts
-    , ("M-C-<Space>"  , toSubl NextLayout)
-    , ("M-C-r"        , toSubl $ MT.Toggle MIRROR)
-    , ("M-C-x"        , toSubl $ MT.Toggle REFLECTX)
-    , ("M-C-y"        , toSubl $ MT.Toggle REFLECTY)
-    , ("M-C-,"        , toSubl $ IncMasterN 1)  -- Switch focus to next tab
-    , ("M-C-."        , toSubl $ IncMasterN (-1))    -- Switch focus to prev tab
-
-    , ("M-M1-h"      , sendMessage $ pullGroup L)
-    , ("M-M1-l"      , sendMessage $ pullGroup R)
-    , ("M-M1-k"      , sendMessage $ pullGroup U)
-    , ("M-M1-j"      , sendMessage $ pullGroup D)
-    , ("M-M1-m"      , withFocused (sendMessage . MergeAll))
-    , ("M-M1-u"      , withFocused (sendMessage . UnMerge))
-    , ("M-M1-/"      , withFocused (sendMessage . UnMergeAll))
-
-    , ("M-C-S-h"      , toSubl Shrink)              -- Shrink horiz window width
-    , ("M-C-S-l"      , toSubl Expand)              -- Expand horiz window width
-    , ("M-C-S-j"      , toSubl MirrorShrink)        -- Shrink vert window width
-    , ("M-C-S-k"      , toSubl MirrorExpand)        -- Exoand vert window width
-
-    -- , ("M-u"          , onGroup W.focusDown')  -- Switch focus to next tab
-    -- , ("M-i"          , onGroup W.focusUp')    -- Switch focus to prev tab
-    -- , ("M-S-,"        , onGroup W.focusDown')  -- Switch focus to next tab
-    -- , ("M-S-."        , onGroup W.focusUp')    -- Switch focus to prev tab
-
     -- Scratchpads
     , ("M-a"          , namedScratchpadAction scratchpads "tmux")
     , ("M-d"          , namedScratchpadAction scratchpads "Emacs")
