@@ -405,17 +405,7 @@ myKeys home conf =
 
     -- Layouts
     , ("M-<Space>"    , sendMessage NextLayout)
-    , ("M-C-1"        , sendMessage $ JumpToLayout "tall")
-    , ("M-C-2"        , sendMessage $ JumpToLayout "wide")
-    , ("M-C-3"        , sendMessage $ JumpToLayout "grid")
-    , ("M-C-4"        , sendMessage $ JumpToLayout "multiCol")
-    , ("M-C-5"        , sendMessage $ JumpToLayout "monocle")
-    , ("M-C-6"        , sendMessage $ JumpToLayout "threeCol")
-    , ("M-C-7"        , sendMessage $ JumpToLayout "spirals")
-    , ("M-C-8"        , sendMessage $ JumpToLayout "magnify")
-    , ("M-C-9"        , sendMessage $ JumpToLayout "accordion")
     , ("M-r"          , sendMessage $ MT.Toggle MIRROR)
-
 
     , ("M-C-M1-<Up>"  , sendMessage Arrange)
     , ("M-C-M1-<Down>", sendMessage DeArrange)
