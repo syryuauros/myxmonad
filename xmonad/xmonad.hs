@@ -155,7 +155,7 @@ import XMonad.Layout.MultiColumns (multiCol)
 import XMonad.Actions.Submap (submap)
 import XMonad.Layout.HintedTile (HintedTile(HintedTile), Alignment (TopLeft), Orientation (Tall, Wide))
 import XMonad.Util.XSelection (getSelection)
-import XMonad.Actions.FloatKeys (keysResizeWindow)
+import XMonad.Actions.FloatKeys (keysResizeWindow, keysMoveWindow)
 
 myFont :: String
 myFont = "xft:SauceCodePro Nerd Font Mono:regular:size=9:antialias=true:hinting=true"
@@ -437,14 +437,16 @@ myKeys home conf =
     , ("M-C-j"        , sendMessage MirrorShrink)        -- Shrink vert window width
     , ("M-C-k"        , sendMessage MirrorExpand)        -- Exoand vert window width
 
-    , ("M-i",    withFocused $ keysResizeWindow (0, 19) (1,1))
-    , ("M-u",    withFocused $ keysResizeWindow (0,-19) (1,1))
-    , ("M-M1-i", withFocused $ keysResizeWindow (0,-19) (0,0))
-    , ("M-M1-u", withFocused $ keysResizeWindow (0, 19) (0,0))
-    , ("M-o",    withFocused $ keysResizeWindow ( 9, 0) (0,0))
-    , ("M-y",    withFocused $ keysResizeWindow (-9, 0) (0,0))
-    , ("M-M1-o", withFocused $ keysResizeWindow (-9, 0) (1,1))
-    , ("M-M1-y", withFocused $ keysResizeWindow ( 9, 0) (1,1))
+    , ("M-C-i", withFocused $ keysResizeWindow (0,9) (1/2,1/2))
+    , ("M-C-u", withFocused $ keysResizeWindow (0,-9) (1/2,1/2))
+    , ("M-C-o", withFocused $ keysResizeWindow (16,0) (1/2,1/2))
+    , ("M-C-y", withFocused $ keysResizeWindow (-16,0) (1/2,1/2))
+
+    -- Window moving
+    , ("M-i",    withFocused $ keysMoveWindow (0,-9))
+    , ("M-u",    withFocused $ keysMoveWindow (0,9))
+    , ("M-o",    withFocused $ keysMoveWindow (16,0))
+    , ("M-y",    withFocused $ keysMoveWindow (-16,0))
 
     -- Scratchpads
     , ("M-a"          , namedScratchpadAction scratchpads "tmux")
