@@ -47,7 +47,7 @@ import System.Exit (exitSuccess)
 import qualified XMonad.StackSet as W
 
     -- Actions
-import XMonad.Actions.CopyWindow (kill1, killAllOtherCopies)
+import XMonad.Actions.CopyWindow (kill1)
 import XMonad.Actions.CycleWS ( moveTo, shiftTo, WSType(..)
                               , nextScreen, prevScreen
                               , shiftPrevScreen, shiftNextScreen
@@ -155,6 +155,7 @@ import XMonad.Layout.MultiColumns (multiCol)
 import XMonad.Actions.Submap (submap)
 import XMonad.Layout.HintedTile (HintedTile(HintedTile), Alignment (TopLeft), Orientation (Tall, Wide))
 import XMonad.Util.XSelection (getSelection)
+import XMonad.Actions.FloatKeys (keysResizeWindow)
 
 myFont :: String
 myFont = "xft:SauceCodePro Nerd Font Mono:regular:size=9:antialias=true:hinting=true"
@@ -356,7 +357,7 @@ myKeys home conf =
     , ("M-s"     , spawn "dm-search.sh")
     , ("M-v"     , spawn "clipmenu")
     , ("M-c"     , spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
-    , ("M-o"     , spawn "dmenu_run -i -p \"Run: \"")
+    -- , ("M-o"     , spawn "dmenu_run -i -p \"Run: \"")
     , ("M-/"     , spawn "dm-qutebrowser-history.sh")
 
     -- Windows navigation
@@ -436,6 +437,16 @@ myKeys home conf =
     , ("M-C-j"        , sendMessage MirrorShrink)        -- Shrink vert window width
     , ("M-C-k"        , sendMessage MirrorExpand)        -- Exoand vert window width
 
+    , ("M-i",    withFocused $ keysResizeWindow (0, 19) (1,1))
+    , ("M-u",    withFocused $ keysResizeWindow (0,-19) (1,1))
+    , ("M-M1-i", withFocused $ keysResizeWindow (0,-19) (0,0))
+    , ("M-M1-u", withFocused $ keysResizeWindow (0, 19) (0,0))
+    , ("M-o",    withFocused $ keysResizeWindow ( 9, 0) (0,0))
+    , ("M-y",    withFocused $ keysResizeWindow (-9, 0) (0,0))
+    , ("M-M1-o", withFocused $ keysResizeWindow (-9, 0) (1,1))
+    , ("M-M1-y", withFocused $ keysResizeWindow ( 9, 0) (1,1))
+
+
     -- SubLayouts
     , ("M-C-<Space>"  , toSubl NextLayout)
     , ("M-C-r"        , toSubl $ MT.Toggle MIRROR)
@@ -457,10 +468,10 @@ myKeys home conf =
     , ("M-C-S-j"      , toSubl MirrorShrink)        -- Shrink vert window width
     , ("M-C-S-k"      , toSubl MirrorExpand)        -- Exoand vert window width
 
-    , ("M-u"          , onGroup W.focusDown')  -- Switch focus to next tab
-    , ("M-i"          , onGroup W.focusUp')    -- Switch focus to prev tab
-    , ("M-S-,"        , onGroup W.focusDown')  -- Switch focus to next tab
-    , ("M-S-."        , onGroup W.focusUp')    -- Switch focus to prev tab
+    -- , ("M-u"          , onGroup W.focusDown')  -- Switch focus to next tab
+    -- , ("M-i"          , onGroup W.focusUp')    -- Switch focus to prev tab
+    -- , ("M-S-,"        , onGroup W.focusDown')  -- Switch focus to next tab
+    -- , ("M-S-."        , onGroup W.focusUp')    -- Switch focus to prev tab
 
     -- Scratchpads
     , ("M-a"          , namedScratchpadAction scratchpads "tmux")
