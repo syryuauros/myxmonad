@@ -15,7 +15,7 @@ let
 
     mkdir -p "$XMONAD_CONFIG_DIR/lib" "$XMONAD_CACHE_DIR" "$XMONAD_DATA_DIR"
 
-    cp ${../xmonad.hs} xmonad-config/xmonad.hs
+    cp ${../xmonad/xmonad.hs} xmonad-config/xmonad.hs
 
     xmonad --recompile
 

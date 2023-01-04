@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RecordWildCards #-}
 
 
 import XMonad
@@ -171,7 +172,7 @@ myBrowser = "brave"
 -- myBrowser = "qutebrowser"
 
 myScreenLocker :: String
-myScreenLocker = "i3lock-fancy-rapid 5 pixel"
+myScreenLocker = "i3lock-fancy-rapid 10 pixel"
 
 myEditor :: String
 myEditor = "emacsclient -c -a 'emacs --fg-daemon'"  -- Sets emacs as editor for tree select
@@ -201,7 +202,7 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook = do
   spawn "xset r rate 250 80"
-  spawn "picom -CGcf -i 0.7 -I 1.0 -O 1.0 -D 0 --detect-client-leader"
+  spawn "picom -cf -i 0.8 --use-ewmh-active-win"
   <+> setWMName "LG3D"
 
 
@@ -235,80 +236,27 @@ myShowWNameTheme = def
     }
 
 
--- Defining a bunch of layouts, many that I don't use.
--- limitWindows n sets maximum number of windows displayed for layout.
--- mySpacing n sets the gap size around the windows.
-mySubLayout = windowArrange
-            $ mkToggle (NBFULL ?? NOBORDERS ?? EOT)
-            $ mkToggle (single MIRROR)
-            . mkToggle (single REFLECTX)
-            . mkToggle (single REFLECTY)
-            $ (    Simplest
-               ||| subTall
-               ||| subMultiCol
-              )
-  where
-    subTall = mySpacing 1
-            $ windowNavigation
-            $ ResizableTall 1 (3/100) (1/2) []
-    subMultiCol = mySpacing 1
-                $ windowNavigation
-                $ multiCol [1] 0 0.02 0.5
-
-mkLayout layout = windowNavigation
-     $ addTabs shrinkText myTabTheme
-     $ B.boringWindows
-     $ subLayout [] (smartBorders mySubLayout)
-     $ mySpacing 4
-     layout
-
-tall = mkLayout $ ResizableTall 1 (3/100) (1/2) []
-wide = Mirror tall
-grid = mkLayout $ Grid (16/10)
-myMultiCol = mkLayout $ multiCol [1] 0 0.02 0.5
--- twopane  = renamed [Replace "twopane"]
---          $ windowNavigation
---          $ addTabs shrinkText myTabTheme
---          $ subLayout [] Simplest -- (smartBorders Simplest)
---          $ limitWindows 12
---          $ mySpacing 4
---          $ TwoPane (3/100) (1/2)
-magnify  = mkLayout $ ResizableTall 1 (3/100) (1/2) []
-monocle  = mkLayout $ limitWindows 20 Full
-floats   = mkLayout simplestFloat
-spirals  = mkLayout
-         $ mySpacing' 2
-         $ limitWindows 12
-         $ spiral (6/7)
-threeCol = mkLayout $ ThreeCol 1 (3/100) (1/2)
-
-accordion = mkLayout Accordion
-
 -- The layout hook
 myLayoutHook = avoidStruts
              $ mouseResize
                myDefaultLayout
-             where
-               myDefaultLayout =   renamed [Replace "tall"] (mkToggleAll tall)
-                               ||| renamed [Replace "wide"] (mkToggleAll wide)
-                               ||| renamed [Replace "grid"] (mkToggleAll grid)
-                               ||| renamed [Replace "multiCol"] (mkToggleAll myMultiCol)
-                               ||| renamed [Replace "monocle"] (mkToggleAll (noBorders monocle))
-                               ||| renamed [Replace "threeCol"] (mkToggleAll threeCol)
-                               ||| renamed [Replace "spirals"] (mkToggleAll spirals)
-                               ||| renamed [Replace "magnify"] (mkToggleAll magnify)
-                               ||| renamed [Replace "accordion"] (mkToggleAll accordion)
-                               --- ||| floats
-                               --- ||| threeRow
-                               --- ||| noBorders tabs
-                               --- ||| twopane
-               mkToggleAll l = windowArrange
-                             $ T.toggleLayouts floats
-                             $ mkToggle (NBFULL ?? NOBORDERS ?? EOT)
-                             . mkToggle (single MIRROR)
-                             . mkToggle (single REFLECTX)
-                             . mkToggle (single REFLECTY)
-                             $ l
+  where
+    myDefaultLayout = renamed [Replace "tall"] (mkToggleAll tall)
+    mkToggleAll l = windowArrange
+                  $ T.toggleLayouts floats
+                  $ mkToggle (NBFULL ?? EOT)
+                  . mkToggle (single MIRROR)
+                  $ l
+    tall = mkLayout $ ResizableTall 1 (3/100) (1/2) []
+    floats = mkLayout simplestFloat
+    mkLayout layout
+      = windowNavigation
+      $ B.boringWindows
+      $ mySpacing 4
+      layout
+
+
+
 myWorkspaces :: [String]
 myWorkspaces = [" 1 ", " 2 ", " 3 ", " 4 ", " 5 ", " 6 ", " 7 ", " 8 ", " 9 "]
 
@@ -319,83 +267,38 @@ clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
 
 
 data App
-  = ClassApp { getName :: String, getCommand :: String}
-  | TitleApp { getName :: String, getCommand :: String}
-  | NameApp { getName :: String, getCommand :: String}
+  = ClassApp { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
+  | TitleApp { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
+  | NameApp  { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
   deriving Show
 
-audacious  = ClassApp "Audacious"            "audacious"
-eog        = NameApp  "eog"                  "eog"
-evince     = ClassApp "Evince"               "evince"
-gimp       = ClassApp "Gimp"                 "gimp"
-nautilus   = ClassApp "Org.gnome.Nautilus"   "nautilus"
-pavuctrl   = ClassApp "Pavucontrol"          "pavucontrol"
 
-
-myManageHook :: XMonad.Query (Data.Monoid.Endo WindowSet)
-myManageHook = manageApps <+> manageSpawn <+> manageScratchpads <+> manageDocks
- where
-  manageScratchpads = namedScratchpadManageHook myScratchPads
-
-
-manageApps = composeOne
-  [ (className =? "Org.gnome.Nautilus")      -?> doFloat
-  , match [ gimp ]                           -?> doCenterFloat
-  , match [ audacious
-          , eog
-          , nautilus
-          , pavuctrl
-          ]                                  -?> doCenterFloat
-  , match [ evince ]                         -?> doFullFloat
-  , resource =? "desktop_window"             -?> doIgnore
-  , resource =? "kdesktop"                   -?> doIgnore
-  , anyOf [ isBrowserDialog
-          , isFileChooserDialog
-          , isDialog
-          , isPopup
-          , isSplash
-          ]                                  -?> doCenterFloat
-  , isFullscreen                             -?> doFullFloat
-  , pure True                                -?> tileBelow
-  ]
- where
-  isBrowserDialog     = isDialog <&&> className =? "Brave-browser"
-  isFileChooserDialog = isRole =? "GtkFileChooserDialog"
-  isPopup             = isRole =? "pop-up"
-  isSplash            = isInProperty "_NET_WM_WINDOW_TYPE" "_NET_WM_WINDOW_TYPE_SPLASH"
-  isRole              = stringProperty "WM_WINDOW_ROLE"
-  anyOf :: [Query Bool] -> Query Bool
-  anyOf = foldl (<||>) (pure False)
-  match :: [App] -> Query Bool
-  match = anyOf . fmap isInstance
-  tileBelow           = insertPosition Below Newer
-  doCalendarFloat     = customFloating (W.RationalRect (11 / 15) (1 / 48) (1 / 8) (1 / 8))
-
-
-isInstance :: App -> Query Bool
-isInstance (ClassApp c _) = className =? c
-isInstance (TitleApp t _) = title =? t
-isInstance (NameApp n _)  = appName =? n
-
-
-myScratchPads = putCenter <$> scratchpadApps
+myManageHook = composeOne $
+  [ resource =? t                        -?> doFloat | t <- byResource ] ++
+  [ className =? c                       -?> doFloat | c <- byClass    ] ++
+  [ title =? t                           -?> doFloat | t <- byTitle    ] ++
+  [ stringProperty "WM_WINDOW_ROLE" =? r -?> doFloat | r <- byRole     ]
   where
-    scratchpadApps =
-      [ ClassApp "termSP"    (myTerminal ++ " --class termSP")
-      , ClassApp "htopSP"    (myTerminal ++ " --class htopSP -e htop")
-      , ClassApp "btmSP"     (myTerminal ++ " --class btmSP -e btm")
-      , TitleApp "editorSP"  "emacsclient -s editorSP -c -a 'emacs --title editorSP --fg-daemon=editorSP'"
-      ]
+    byResource = ["Devtools", "plasmashell"]
+    byClass = []
+    byTitle = ["Open Document",
+               "Open Files",
+               "Developer Tools"]
+    byRole = ["pop-up", "bubble"]
 
-    putCenter :: App -> NamedScratchpad
-    putCenter app = NS (getName app) (getCommand app) (isInstance app) centerFloating
-      where
-        centerFloating = customFloating $ W.RationalRect l t w h
-                          where
-                            h = 0.9
-                            w = 0.9
-                            t = (1.0 - h)/2
-                            l = (1.0 - w)/2
+mkNS TitleApp {..} = NS name cmd (title =? name) (customFloating $ W.RationalRect px py wd ht)
+mkNS ClassApp {..} = NS name cmd (className =? name) (customFloating $ W.RationalRect px py wd ht)
+mkNS NameApp {..} = NS name cmd (appName =? name) (customFloating $ W.RationalRect px py wd ht)
+
+
+scratchpads =
+  mkNS <$>
+  [ ClassApp "Emacs"         (4/32) (1/32) (24/32) (30/32) myEditor
+  , TitleApp "tmux"          (4/32) (1/32) (24/32) (30/32) (myTerminal ++ " -t tmux -e tmux")
+  , TitleApp "htop"          (1/32) (1/32) (30/32) (16/32) (myTerminal ++ " -t htop -e htop")
+  , TitleApp "btm"           (16/32) (1/32) (15/32) (30/32) (myTerminal ++ " -t btm -e btm")
+  , ClassApp "Brave-browser" (4/32) (1/32) (24/32) (30/32) myBrowser
+  ]
 
 
 main :: IO ()
@@ -406,7 +309,7 @@ main = do
     xmproc2 <- spawnPipe "xmobar -x 2 $HOME/.config/xmobar/xmobarrc"
     xmonad $ let
       conf = ewmhFullscreen def
-        { manageHook = myManageHook
+        { manageHook = myManageHook <+> namedScratchpadManageHook scratchpads
         , modMask            = myModMask
         , terminal           = myTerminal
         , startupHook        = myStartupHook
@@ -439,74 +342,25 @@ myLogHook = fadeInactiveLogHook fadeAmount
 
 ------------------------------------------------------------------------
 -- Key Bindings
-
-mySubLayoutKeys :: [(String, X ())]
-mySubLayoutKeys =
-    [
-      ("<Space>"  , toSubl NextLayout)
-    , ("`"        , toSubl $ MT.Toggle MIRROR)
-    , ("x"        , toSubl $ MT.Toggle REFLECTX)
-    , ("y"        , toSubl $ MT.Toggle REFLECTY)
-    , (","        , toSubl $ IncMasterN 1)  -- Switch focus to next tab
-    , ("."        , toSubl $ IncMasterN (-1))    -- Switch focus to prev tab
-
-    , ("m"        , withFocused (sendMessage . MergeAll))
-    , ("u"        , withFocused (sendMessage . UnMerge))
-    , ("/"        , withFocused (sendMessage . UnMergeAll))
-
-    , ("u"        , onGroup W.focusDown')  -- Switch focus to next tab
-    , ("i"        , onGroup W.focusUp')    -- Switch focus to prev tab
-    , ("S-,"      , onGroup W.focusDown')  -- Switch focus to next tab
-    , ("S-."      , onGroup W.focusUp')    -- Switch focus to prev tab
-
-    -- Window resizing
-    , ("h"        , toSubl Shrink)              -- Shrink horiz window width
-    , ("l"        , toSubl Expand)              -- Expand horiz window width
-    , ("j"        , toSubl MirrorShrink)        -- Shrink vert window width
-    , ("k"        , toSubl MirrorExpand)        -- Exoand vert window width
-    , ("M-h"      , toSubl Shrink)              -- Shrink horiz window width
-    , ("M-l"      , toSubl Expand)              -- Expand horiz window width
-    , ("M-j"      , toSubl MirrorShrink)        -- Shrink vert window width
-    , ("M-k"      , toSubl MirrorExpand)        -- Exoand vert window width
-    ]
-
-myKeys :: String -> XConfig l -> [(String, X ())]
 myKeys home conf =
     -- Xmonad
     [ -- ("M-q"       , spawn "xmonad --recompile; xmonad --restart")
       -- ("M-q"       , spawn "restart-xmonad.sh")
-      ("M-C-q"     , spawn "restart-xmonad.sh")
+      ("M-C-q"     , spawn "xmonad-restart")
     , ("M-C-S-q"   , io exitSuccess)         -- Quits xmonad
 
     -- Launch programs
     , ("M-p"     , spawn myDmenu)
     , ("M-S-p"   , spawn myRofi)
 
-    , ("M-a n"   , spawn myEmail)
-    , ("M-a w"   , spawn "dm-wifi.sh")
-    , ("M-a t"   , spawn myTrayer)
-    , ("M-a y"   , spawn "killall trayer")
-    , ("M-a l"   , spawn myScreenLocker)
-    , ("M-a c"   , spawn "mkdir -p ~/captures; flameshot full -p ~/captures/")
-    , ("M-a f"   , spawn "nautilus")
-
     , ("M-s"     , spawn "dm-search.sh")
-    , ("M-b"     , spawn myBrowser)
     , ("M-v"     , spawn "clipmenu")
     , ("M-c"     , spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
-    , ("M-d"     , spawn myEditor)
     , ("M-o"     , spawn "dmenu_run -i -p \"Run: \"")
     , ("M-/"     , spawn "dm-qutebrowser-history.sh")
 
-
-    -- , ("M-S-<Return>", shellPrompt myXPConfig) -- Xmonad Shell Prompt
-    -- , ("M-S-<Return>", spawn "dmenu_run -i -p \"Run: \"") -- Dmenu
-    -- , ("M-S-<Return>", spawn "rofi -show drun -config ~/.config/rofi/themes/dt-dmenu.rasi -display-drun \"Run: \" -drun-display-format \"{name}\"") -- Rofi
-
     -- Windows navigation
-    , ("M-<Return>"   , whenX (swapHybrid True) dwmpromote)                   -- Moves focused window to master, others maintain order
     , ("M-S-m"        , swapMaster)                -- Moves focused window to master, others maintain order
-    -- , ("M-m"          , windows W.focusMaster)  -- Move focus to the master window
     , ("M-k"          , B.focusUp)                 -- Move focus to the prev window, skipiping hidden windows
     , ("M-j"          , B.focusDown)               -- Move focus to the next window, skipiping hidden windows
     , ("M-m"          , B.focusMaster)             -- Move focus to the master window, skipiping hidden windows
@@ -514,10 +368,6 @@ myKeys home conf =
     , ("M-l"          , windows W.focusDown)       -- Move focus to the next window
     -- , ("M-h"          , B.focusUp)                 -- Move focus to the prev window, skipiping hidden windows
     -- , ("M-l"          , B.focusDown)               -- Move focus to the next window, skipiping hidden windows
-    , ("M-S-h"        , windows W.swapUp)          -- Swap focused window with prev window
-    , ("M-S-j"        , windows W.swapDown)        -- Swap focused window with next window
-    , ("M-S-k"        , windows W.swapUp)          -- Swap focused window with prev window
-    , ("M-S-l"        , windows W.swapDown)        -- Swap focused window with next window
     , ("M-C-<Tab>"    , rotAllDown)                -- Rotate all the windows in the current stack
     , ("M-C-S-<Tab>"  , rotSlavesDown)             -- Rotate all windows except master and keep focus in place
     , ("M-n"          , toggleFocus)               -- Move focus to the lastly focused
@@ -525,22 +375,22 @@ myKeys home conf =
 
     -- boring windows, which are skipped in navigation
     , ("M-S-b"        , B.markBoring)
-    , ("M-M1-b"        , B.clearBoring)
+    , ("M-M1-b"       , B.clearBoring)
 
     -- Kill windows
     , ("M-S-c"        , kill1)                  -- Kill the currently focused client
     , ("M-S-a"        , killAll)                -- Kill all windows on current workspace
 
     -- Workspaces
-    , ("M-["     , moveTo Prev nonNSP)               -- moveTo previous workspace
-    , ("M-]"     , moveTo Next nonNSP)               -- moveTo next workspace
+    , ("M-["     , moveTo Prev nonNSP)                         -- moveTo previous workspace
+    , ("M-]"     , moveTo Next nonNSP)                         -- moveTo next workspace
     , ("M-`"     , toggleWS)
     , ("M-S-["   , shiftTo Prev nonNSP >> moveTo Prev nonNSP)  -- Shifts focused window to prev ws and move
     , ("M-S-]"   , shiftTo Next nonNSP >> moveTo Next nonNSP)  -- Shifts focused window to next ws and move
-    , ("M-C-["   , prevScreen)                       -- Switch focus to prev monitor
-    , ("M-C-]"   , nextScreen)                       -- Switch focus to next monitor
-    , ("M-C-S-[" , shiftPrevScreen >> prevScreen)    -- Shifts focused window to prev monitor and move
-    , ("M-C-S-]" , shiftNextScreen >> nextScreen)    -- Shifts focused window to next monitor and move
+    , ("M-C-["   , prevScreen)                                 -- Switch focus to prev monitor
+    , ("M-C-]"   , nextScreen)                                 -- Switch focus to next monitor
+    , ("M-C-S-[" , shiftPrevScreen >> prevScreen)              -- Shifts focused window to prev monitor and move
+    , ("M-C-S-]" , shiftNextScreen >> nextScreen)              -- Shifts focused window to next monitor and move
 
     -- Floating windows
     , ("M-t"          , withFocused $ windows . W.sink)  -- Push floating window back to tile
@@ -563,10 +413,7 @@ myKeys home conf =
     , ("M-C-7"        , sendMessage $ JumpToLayout "spirals")
     , ("M-C-8"        , sendMessage $ JumpToLayout "magnify")
     , ("M-C-9"        , sendMessage $ JumpToLayout "accordion")
-    , ("M-C-b"        , sendMessage $ MT.Toggle NOBORDERS)
     , ("M-r"          , sendMessage $ MT.Toggle MIRROR)
-    , ("M-x"          , sendMessage $ MT.Toggle REFLECTX)
-    , ("M-y"          , sendMessage $ MT.Toggle REFLECTY)
 
 
     , ("M-C-M1-<Up>"  , sendMessage Arrange)
@@ -588,7 +435,6 @@ myKeys home conf =
     , ("M-C-l"        , sendMessage Expand)              -- Expand horiz window width
     , ("M-C-j"        , sendMessage MirrorShrink)        -- Shrink vert window width
     , ("M-C-k"        , sendMessage MirrorExpand)        -- Exoand vert window width
-
 
     -- SubLayouts
     , ("M-C-<Space>"  , toSubl NextLayout)
@@ -615,15 +461,13 @@ myKeys home conf =
     , ("M-i"          , onGroup W.focusUp')    -- Switch focus to prev tab
     , ("M-S-,"        , onGroup W.focusDown')  -- Switch focus to next tab
     , ("M-S-."        , onGroup W.focusUp')    -- Switch focus to prev tab
-    , ("M-g"          , submap $ conf  `mkKeymap` mySubLayoutKeys)
-
 
     -- Scratchpads
-    , ("M-C-<Return>" , namedScratchpadAction myScratchPads "termSP")
-    , ("M-C-d"        , namedScratchpadAction myScratchPads "editorSP")
-    , ("M-C-b"        , namedScratchpadAction myScratchPads "btmSP")
-    , ("M-C-t"        , namedScratchpadAction myScratchPads "htopSP")
-
+    , ("M-a"          , namedScratchpadAction scratchpads "tmux")
+    , ("M-d"          , namedScratchpadAction scratchpads "Emacs")
+    , ("M-z"          , namedScratchpadAction scratchpads "htop")
+    , ("M-x"          , namedScratchpadAction scratchpads "btm")
+    , ("M-b"          , namedScratchpadAction scratchpads "Brave-browser")
 
     , ("M-M1-9" , spawn "xbacklight -inc 5")
     , ("M-M1-8" , spawn "xbacklight -dec 5")
