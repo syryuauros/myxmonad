@@ -51,7 +51,7 @@ import XMonad.Actions.CopyWindow (kill1)
 import XMonad.Actions.CycleWS ( moveTo, shiftTo, WSType(..)
                               , nextScreen, prevScreen
                               , shiftPrevScreen, shiftNextScreen
-                              , toggleWS
+                              , toggleWS, anyWS
                               )
 import XMonad.Actions.MouseResize ( mouseResize )
 import XMonad.Actions.SwapPromote (swapHybrid)
@@ -250,7 +250,7 @@ myLayoutHook = avoidStruts
 
 
 myWorkspaces :: [String]
-myWorkspaces = [" 1 ", " 2 ", " 3 ", " 4 ", " 5 ", " 6 ", " 7 ", " 8 ", " 9 "]
+myWorkspaces = [" 1 ", " 2 ", " 3 "]
 
 clickable :: String -> String
 clickable ws = "<action=xdotool key super+"++show i++">"++ws++"</action>"
@@ -283,9 +283,10 @@ mkNS ClassApp {..} = NS name cmd (className =? name) (customFloating $ W.Rationa
 mkNS NameApp {..} = NS name cmd (appName =? name) (customFloating $ W.RationalRect px py wd ht)
 
 
+scratchpads :: [NamedScratchpad]
 scratchpads =
   mkNS <$>
-  [ ClassApp "Emacs"         (4/32) (1/32) (24/32) (30/32) myEditor
+  [ TitleApp "emacsSP"       (4/32) (1/32) (24/32) (30/32) "emacsclient -s emacsSP -c -a 'emacs --title emacsSP --bg-daemon=emacsSP'"
   , TitleApp "tmux"          (4/32) (1/32) (24/32) (30/32) (myTerminal ++ " -t tmux -e tmux")
   , TitleApp "htop"          (1/32) (1/32) (30/32) (16/32) (myTerminal ++ " -t htop -e htop")
   , TitleApp "btm"           (16/32) (1/32) (15/32) (30/32) (myTerminal ++ " -t btm -e btm")
@@ -338,106 +339,110 @@ myKeys home conf =
     -- Xmonad
     [ -- ("M-q"       , spawn "xmonad --recompile; xmonad --restart")
       -- ("M-q"       , spawn "restart-xmonad.sh")
-      ("M-C-q"     , spawn "xmonad-restart")
-    , ("M-C-S-q"   , io exitSuccess)         -- Quits xmonad
+      ("M-C-q"                  , spawn "xmonad-restart")
+    , ("M-C-S-q"                , io exitSuccess)         -- Quits xmonad
 
     -- Launch programs
-    , ("M-p"     , spawn myDmenu)
-    , ("M-S-p"   , spawn myRofi)
+    , ("M-p"                    , spawn myDmenu)
+    , ("M-S-p"                  , spawn myRofi)
 
-    , ("M-s"     , spawn "dm-search.sh")
-    , ("M-v"     , spawn "clipmenu")
-    , ("M-c"     , spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
-    -- , ("M-o"     , spawn "dmenu_run -i -p \"Run: \"")
-    , ("M-/"     , spawn "dm-qutebrowser-history.sh")
+    , ("M-s"                    , spawn "dm-search.sh")
+    , ("M-v"                    , spawn "clipmenu")
+    , ("M-c"                    , spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
+    -- , ("M-o"                    , spawn "dmenu_run -i -p \"Run: \"")
+    , ("M-/"                    , spawn "dm-qutebrowser-history.sh")
 
     -- Windows navigation
-    , ("M-S-m"        , swapMaster)                -- Moves focused window to master, others maintain order
-    , ("M-k"          , B.focusUp)                 -- Move focus to the prev window, skipiping hidden windows
-    , ("M-j"          , B.focusDown)               -- Move focus to the next window, skipiping hidden windows
-    , ("M-m"          , B.focusMaster)             -- Move focus to the master window, skipiping hidden windows
-    , ("M-h"          , windows W.focusUp)         -- Move focus to the prev window
-    , ("M-l"          , windows W.focusDown)       -- Move focus to the next window
-    -- , ("M-h"          , B.focusUp)                 -- Move focus to the prev window, skipiping hidden windows
-    -- , ("M-l"          , B.focusDown)               -- Move focus to the next window, skipiping hidden windows
-    , ("M-C-<Tab>"    , rotAllDown)                -- Rotate all the windows in the current stack
-    , ("M-C-S-<Tab>"  , rotSlavesDown)             -- Rotate all windows except master and keep focus in place
-    , ("M-n"          , toggleFocus)               -- Move focus to the lastly focused
-    , ("M-S-n"        , swapWithLast)              -- Move the focused to the lastly focused
+    , ("M-S-m"                  , swapMaster)                -- Moves focused window to master, others maintain order
+    , ("M-k"                    , B.focusUp)                 -- Move focus to the prev window, skipiping hidden windows
+    , ("M-j"                    , B.focusDown)               -- Move focus to the next window, skipiping hidden windows
+    , ("M-m"                    , B.focusMaster)             -- Move focus to the master window, skipiping hidden windows
+    , ("M-h"                    , windows W.focusUp)         -- Move focus to the prev window
+    , ("M-l"                    , windows W.focusDown)       -- Move focus to the next window
+    -- , ("M-h"                    , B.focusUp)                 -- Move focus to the prev window, skipiping hidden windows
+    -- , ("M-l"                    , B.focusDown)               -- Move focus to the next window, skipiping hidden windows
+    , ("M-C-<Tab>"              , rotAllDown)                -- Rotate all the windows in the current stack
+    , ("M-C-S-<Tab>"            , rotSlavesDown)             -- Rotate all windows except master and keep focus in place
+    , ("M-n"                    , toggleFocus)               -- Move focus to the lastly focused
+    , ("M-S-n"                  , swapWithLast)              -- Move the focused to the lastly focused
 
     -- boring windows, which are skipped in navigation
-    , ("M-S-b"        , B.markBoring)
-    , ("M-M1-b"       , B.clearBoring)
+    , ("M-S-b"                  , B.markBoring)
+    , ("M-M1-b"                 , B.clearBoring)
 
     -- Kill windows
-    , ("M-S-c"        , kill1)                  -- Kill the currently focused client
-    , ("M-S-a"        , killAll)                -- Kill all windows on current workspace
+    , ("M-S-c"                  , kill1)                  -- Kill the currently focused client
+    , ("M-S-a"                  , killAll)                -- Kill all windows on current workspace
 
     -- Workspaces
-    , ("M-["     , moveTo Prev nonNSP)                         -- moveTo previous workspace
-    , ("M-]"     , moveTo Next nonNSP)                         -- moveTo next workspace
-    , ("M-`"     , toggleWS)
-    , ("M-S-["   , shiftTo Prev nonNSP >> moveTo Prev nonNSP)  -- Shifts focused window to prev ws and move
-    , ("M-S-]"   , shiftTo Next nonNSP >> moveTo Next nonNSP)  -- Shifts focused window to next ws and move
-    , ("M-C-["   , prevScreen)                                 -- Switch focus to prev monitor
-    , ("M-C-]"   , nextScreen)                                 -- Switch focus to next monitor
-    , ("M-C-S-[" , shiftPrevScreen >> prevScreen)              -- Shifts focused window to prev monitor and move
-    , ("M-C-S-]" , shiftNextScreen >> nextScreen)              -- Shifts focused window to next monitor and move
+    , ("M-["                    , moveTo Prev anyWS)                         -- moveTo previous workspace
+    , ("M-]"                    , moveTo Next anyWS)                         -- moveTo next workspace
+    , ("M-`"                    , toggleWS)
+    , ("M-S-["                  , shiftTo Prev nonNSP >> moveTo Prev nonNSP)  -- Shifts focused window to prev ws and move
+    , ("M-S-]"                  , shiftTo Next nonNSP >> moveTo Next nonNSP)  -- Shifts focused window to next ws and move
+    , ("M-C-["                  , prevScreen)                                 -- Switch focus to prev monitor
+    , ("M-C-]"                  , nextScreen)                                 -- Switch focus to next monitor
+    , ("M-C-S-["                , shiftPrevScreen >> prevScreen)              -- Shifts focused window to prev monitor and move
+    , ("M-C-S-]"                , shiftNextScreen >> nextScreen)              -- Shifts focused window to next monitor and move
 
     -- Floating windows
-    , ("M-t"          , withFocused $ windows . W.sink)  -- Push floating window back to tile
-    , ("M-S-t"        , sinkAll)                         -- Push ALL floating windows to tile
+    , ("M-t"                     , withFocused $ windows . W.sink)  -- Push floating window back to tile
+    , ("M-S-t"                   , sinkAll)                         -- Push ALL floating windows to tile
 
     -- Increase/decrease spacing (gaps)
-    , ("M--"          , decWindowSpacing 1)         -- Decrease window spacing
-    , ("M-="          , incWindowSpacing 1)         -- Increase window spacing
-    , ("M-S--"        , decScreenSpacing 1)         -- Decrease screen spacing
-    , ("M-S-="        , incScreenSpacing 1)         -- Increase screen spacing
+    , ("M--"                     , decWindowSpacing 1)         -- Decrease window spacing
+    , ("M-="                     , incWindowSpacing 1)         -- Increase window spacing
+    , ("M-S--"                   , decScreenSpacing 1)         -- Decrease screen spacing
+    , ("M-S-="                   , incScreenSpacing 1)         -- Increase screen spacing
 
     -- Layouts
-    , ("M-<Space>"    , sendMessage NextLayout)
-    , ("M-r"          , sendMessage $ MT.Toggle MIRROR)
+    , ("M-<Space>"               , sendMessage NextLayout)
+    , ("M-r"                     , sendMessage $ MT.Toggle MIRROR)
 
-    , ("M-C-M1-<Up>"  , sendMessage Arrange)
-    , ("M-C-M1-<Down>", sendMessage DeArrange)
-    , ("M-f"          , sendMessage (MT.Toggle NBFULL) >> sendMessage ToggleStruts) -- Toggles noborder/full
-    , ("M-S-f"        , sendMessage ToggleStruts)
-    , ("M-C-f"        , sendMessage (T.Toggle "floats")) -- Toggles my 'floats' layout
+    , ("M-C-M1-<Up>"             , sendMessage Arrange)
+    , ("M-C-M1-<Down>"           , sendMessage DeArrange)
+    , ("M-f"                     , sendMessage (MT.Toggle NBFULL) >> sendMessage ToggleStruts) -- Toggles noborder/full
+    , ("M-S-f"                   , sendMessage ToggleStruts)
+    , ("M-C-f"                   , sendMessage (T.Toggle "floats")) -- Toggles my 'floats' layout
 
 
     -- Increase/decrease windows in the master pane or the stack
-    , ("M-,"          , sendMessage (IncMasterN 1))      -- Increase number of clients in master pane
-    , ("M-."          , sendMessage (IncMasterN (-1)))   -- Decrease number of clients in master pane
+    , ("M-,"                    , sendMessage (IncMasterN 1))      -- Increase number of clients in master pane
+    , ("M-."                    , sendMessage (IncMasterN (-1)))   -- Decrease number of clients in master pane
     -- , ("M-C-,"        , increaseLimit)                   -- Increase number of windows
     -- , ("M-C-."        , decreaseLimit)                   -- Decrease number of windows
 
 
     -- Window resizing
-    , ("M-C-h"        , sendMessage Shrink)              -- Shrink horiz window width
-    , ("M-C-l"        , sendMessage Expand)              -- Expand horiz window width
-    , ("M-C-j"        , sendMessage MirrorShrink)        -- Shrink vert window width
-    , ("M-C-k"        , sendMessage MirrorExpand)        -- Exoand vert window width
+    , ("M-C-h"                  , sendMessage Shrink)              -- Shrink horiz window width
+    , ("M-C-l"                  , sendMessage Expand)              -- Expand horiz window width
+    , ("M-C-j"                  , sendMessage MirrorShrink)        -- Shrink vert window width
+    , ("M-C-k"                  , sendMessage MirrorExpand)        -- Exoand vert window width
 
-    , ("M-C-i", withFocused $ keysResizeWindow (0,9) (1/2,1/2))
-    , ("M-C-u", withFocused $ keysResizeWindow (0,-9) (1/2,1/2))
-    , ("M-C-o", withFocused $ keysResizeWindow (16,0) (1/2,1/2))
-    , ("M-C-y", withFocused $ keysResizeWindow (-16,0) (1/2,1/2))
+    , ("M-C-i"                  , withFocused $ keysResizeWindow (0,9) (1/2,1/2))
+    , ("M-C-u"                  , withFocused $ keysResizeWindow (0,-9) (1/2,1/2))
+    , ("M-C-o"                  , withFocused $ keysResizeWindow (16,0) (1/2,1/2))
+    , ("M-C-y"                  , withFocused $ keysResizeWindow (-16,0) (1/2,1/2))
 
     -- Window moving
-    , ("M-i",    withFocused $ keysMoveWindow (0,-9))
-    , ("M-u",    withFocused $ keysMoveWindow (0,9))
-    , ("M-o",    withFocused $ keysMoveWindow (16,0))
-    , ("M-y",    withFocused $ keysMoveWindow (-16,0))
+    , ("M-i"                    , withFocused $ keysMoveWindow (0,-9))
+    , ("M-u"                    , withFocused $ keysMoveWindow (0,9))
+    , ("M-o"                    , withFocused $ keysMoveWindow (16,0))
+    , ("M-y"                    , withFocused $ keysMoveWindow (-16,0))
+
+    -- emacs in tiling
+    , ("M-S-d"                  , spawn myEditor)
 
     -- Scratchpads
-    , ("M-a"          , namedScratchpadAction scratchpads "tmux")
-    , ("M-d"          , namedScratchpadAction scratchpads "Emacs")
-    , ("M-z"          , namedScratchpadAction scratchpads "htop")
-    , ("M-x"          , namedScratchpadAction scratchpads "btm")
-    , ("M-b"          , namedScratchpadAction scratchpads "Brave-browser")
+    , ("M-a"                    , namedScratchpadAction scratchpads "tmux")
+    , ("M-d"                    , namedScratchpadAction scratchpads "emacsSP")
+    , ("M-z"                    , namedScratchpadAction scratchpads "htop")
+    , ("M-x"                    , namedScratchpadAction scratchpads "btm")
+    , ("M-b"                    , namedScratchpadAction scratchpads "Brave-browser")
 
-    , ("M-M1-9" , spawn "xbacklight -inc 5")
-    , ("M-M1-8" , spawn "xbacklight -dec 5")
+    -- environment
+    , ("M-M1-9"                 , spawn "xbacklight -inc 5")
+    , ("M-M1-8"                 , spawn "xbacklight -dec 5")
 
     -- Multimedia Keys
     , ("<XF86AudioPlay>"         , spawn (myTerminal ++ " mocp --play"))
