@@ -217,15 +217,6 @@ mySpacing i = spacingRaw False (Border i i i i) True (Border i i i i) True
 mySpacing' :: Integer -> l a -> XMonad.Layout.LayoutModifier.ModifiedLayout Spacing l a
 mySpacing' i = spacingRaw True (Border i i i i) True (Border i i i i) True
 
--- setting colors for tabs layout and tabs sublayout.
-myTabTheme = def { fontName            = myFont
-                 , activeColor         = "#8EA4B7"
-                 , inactiveColor       = "#313846"
-                 , activeBorderColor   = "#8EA4B7"
-                 , inactiveBorderColor = "#282c34"
-                 , activeTextColor     = "#282c34"
-                 , inactiveTextColor   = "#d0d0d0"
-                 }
 
 -- Theme for showWName which prints current workspace when you change workspaces.
 myShowWNameTheme :: SWNConfig
