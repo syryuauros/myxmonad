@@ -188,12 +188,6 @@ myRofi = "rofi -modi drun,ssh,window -show drun -show-icons"
 myDmenu :: String
 myDmenu = "dmenu_run"
 
-myTrayer :: String
-myTrayer =  "trayer --edge top --align right --widthtype request --padding 1 "
-         <> "--SetDockType true --SetPartialStrut true --expand true --transparent true "
-         <> "--alpha 0 --tint 0x282c34  --height 20 --distance 0 --distancefrom right &"
-
-
 altMask :: KeyMask
 altMask = mod1Mask         -- Setting this for use in xprompts
 
