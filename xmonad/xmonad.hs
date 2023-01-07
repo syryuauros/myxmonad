@@ -260,21 +260,19 @@ data App
 
 
 myManageHook = composeOne $
-  [ resource =? t                        -?> doFloat | t <- byResource ] ++
-  [ className =? c                       -?> doFloat | c <- byClass    ] ++
-  [ title =? t                           -?> doFloat | t <- byTitle    ] ++
-  [ stringProperty "WM_WINDOW_ROLE" =? r -?> doFloat | r <- byRole     ]
+  [ resource =? t                        -?> doFloat       | t <- byResource ] ++
+  [ className =? c                       -?> doFloat       | c <- byClass    ] ++
+  [ title =? t                           -?> doFloat       | t <- byTitle    ] ++
+  [ stringProperty "WM_WINDOW_ROLE" =? r -?> doFloat       | r <- byRole     ] ++
+  [ isInProperty "_NET_WM_WINDOW_TYPE" t -?> doCenterFloat | t <- byType     ] ++
+  [ isDialog                             -?> doCenterFloat
+  ]
   where
     byResource = ["Devtools", "plasmashell"]
-    byClass = []
-    byTitle = ["Open Document",
-               "Open Files",
-               "Developer Tools"]
-    byRole = ["pop-up", "bubble"]
-
-mkNS TitleApp {..} = NS name cmd (title =? name) (customFloating $ W.RationalRect px py wd ht)
-mkNS ClassApp {..} = NS name cmd (className =? name) (customFloating $ W.RationalRect px py wd ht)
-mkNS NameApp {..} = NS name cmd (appName =? name) (customFloating $ W.RationalRect px py wd ht)
+    byClass = [ "Org.gnome.Nautilus" ]
+    byTitle = ["Open Document", "Open Files", "Developer Tools"]
+    byRole = ["pop-up", "GtkFileChooserDialog", "bubble"]
+    byType = ["_NET_WM_WINDOW_TYPE_SPLASH", "_NET_WM_WINDOW_TYPE_DIALOG"]
 
 
 scratchpads :: [NamedScratchpad]
@@ -286,6 +284,12 @@ scratchpads =
   , TitleApp "btm"           (16/32) (1/32) (15/32) (30/32) (myTerminal ++ " -t btm -e btm")
   , ClassApp "Brave-browser" (4/32) (1/32) (24/32) (30/32) myBrowser
   ]
+  where
+    mkNS TitleApp {..} = NS name cmd (title =? name) (customFloating $ W.RationalRect px py wd ht)
+    mkNS ClassApp {..} = NS name cmd (className =? name) (customFloating $ W.RationalRect px py wd ht)
+    mkNS NameApp {..} = NS name cmd (appName =? name) (customFloating $ W.RationalRect px py wd ht)
+
+
 
 
 main :: IO ()
