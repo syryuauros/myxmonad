@@ -138,7 +138,7 @@ windowCount = gets $ Just . show . length . W.integrate' . W.stack . W.workspace
 myStartupHook :: X ()
 myStartupHook =
   do
-    spawn "xset r rate 250 80"
+    spawn "xset r rate 350 80"
     spawn "picom -cf -i 0.8 --use-ewmh-active-win"
     <+> setWMName "LG3D"
 
@@ -184,11 +184,11 @@ data App
 scratchpads :: [NamedScratchpad]
 scratchpads =
   mkNS
-    <$> [ TitleApp "emacs" (4 / 32) (1 / 32) (24 / 32) (30 / 32) "emacsclient -s emacs -c -a 'emacs --title emacs --bg-daemon=emacs'",
+    <$> [ TitleApp "emacs" (10 / 32) (1 / 32) (20 / 32) (30 / 32) "emacsclient -s emacs -c -a 'emacs --title emacs --bg-daemon=emacs'",
           TitleApp "tmux" (4 / 32) (1 / 32) (24 / 32) (30 / 32) (myTerminal ++ " -t tmux -e tmux"),
           TitleApp "htop" (1 / 32) (1 / 32) (30 / 32) (16 / 32) (myTerminal ++ " -t htop -e htop"),
           TitleApp "btm" (16 / 32) (1 / 32) (15 / 32) (30 / 32) (myTerminal ++ " -t btm -e btm"),
-          ClassApp "Brave-browser" (4 / 32) (1 / 32) (24 / 32) (30 / 32) myBrowser
+          ClassApp "Brave-browser" (10 / 32) (1 / 32) (20 / 32) (30 / 32) myBrowser
         ]
   where
     mkNS TitleApp {..} = NS name cmd (title =? name) (customFloating $ W.RationalRect px py wd ht)
