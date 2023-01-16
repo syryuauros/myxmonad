@@ -176,19 +176,19 @@ myManageHook =
     byType = ["_NET_WM_WINDOW_TYPE_SPLASH", "_NET_WM_WINDOW_TYPE_DIALOG"]
 
 data App
-  = ClassApp {name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String}
-  | TitleApp {name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String}
-  | NameApp {name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String}
+  = ClassApp { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
+  | TitleApp { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
+  | NameApp  { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
   deriving (Show)
 
 scratchpads :: [NamedScratchpad]
 scratchpads =
   mkNS
-    <$> [ TitleApp "emacs" (10 / 32) (1 / 32) (20 / 32) (30 / 32) "emacsclient -s emacs -c -a 'emacs --title emacs --bg-daemon=emacs'",
-          TitleApp "tmux" (4 / 32) (1 / 32) (24 / 32) (30 / 32) (myTerminal ++ " -t tmux -e tmux"),
-          TitleApp "htop" (1 / 32) (1 / 32) (30 / 32) (16 / 32) (myTerminal ++ " -t htop -e htop"),
-          TitleApp "btm" (16 / 32) (1 / 32) (15 / 32) (30 / 32) (myTerminal ++ " -t btm -e btm"),
-          ClassApp "Brave-browser" (10 / 32) (1 / 32) (20 / 32) (30 / 32) myBrowser
+    <$> [ TitleApp "emacs"         (10 / 32) (1 / 32) (21 / 32) (30 / 32) "emacsclient -s emacs -c -a 'emacs --title emacs --bg-daemon=emacs'"
+        , TitleApp "tmux"          (4 / 32)  (1 / 32) (24 / 32) (30 / 32) (myTerminal ++ " -t tmux -e tmux")
+        , TitleApp "htop"          (1 / 32)  (1 / 32) (30 / 32) (16 / 32) (myTerminal ++ " -t htop -e htop")
+        , TitleApp "btm"           (16 / 32) (1 / 32) (15 / 32) (30 / 32) (myTerminal ++ " -t btm -e btm")
+        , ClassApp "Brave-browser" (10 / 32) (1 / 32) (21 / 32) (30 / 32) myBrowser
         ]
   where
     mkNS TitleApp {..} = NS name cmd (title =? name) (customFloating $ W.RationalRect px py wd ht)
@@ -200,113 +200,113 @@ scratchpads =
 myKeyBindings =
   [ -- ("M-q"       , spawn "xmonad --recompile; xmonad --restart")
     -- ("M-q"       , spawn "restart-xmonad.sh")
-    ("M-C-q", spawn "xmonad-restart"),
-    ("M-C-S-q", io exitSuccess), -- Quits xmonad
+    ("M-C-q", spawn "xmonad-restart")
+  , ("M-C-S-q", io exitSuccess) -- Quits xmonad
 
     -- Launch programs
-    ("M-p", spawn myDmenu),
-    ("M-S-p", spawn myRofi),
+  , ("M-p", spawn myDmenu)
+  , ("M-S-p", spawn myRofi)
     -- ("M-s", spawn "dm-search.sh"),
-    ("M-v", spawn "clipmenu"),
-    ("M-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/"),
+  , ("M-v", spawn "clipmenu")
+  , ("M-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
     -- , ("M-o"                    , spawn "dmenu_run -i -p \"Run: \"")
-    ("M-/", spawn "dm-qutebrowser-history.sh"),
+  , ("M-/", spawn "dm-qutebrowser-history.sh")
     -- Windows navigation
-    ("M-S-m", swapMaster), -- Moves focused window to master, others maintain order
-    ("M-C-<Tab>", rotAllDown), -- Rotate all the windows in the current stack
-    ("M-C-S-<Tab>", rotSlavesDown), -- Rotate all windows except master and keep focus in place
-    ("M-n", toggleFocus), -- Move focus to the lastly focused
-    ("M-S-n", swapWithLast), -- Move the focused to the lastly focused
+  , ("M-S-m", swapMaster) -- Moves focused window to master, others maintain order
+  , ("M-C-<Tab>", rotAllDown) -- Rotate all the windows in the current stack
+  , ("M-C-S-<Tab>", rotSlavesDown) -- Rotate all windows except master and keep focus in place
+  , ("M-n", toggleFocus) -- Move focus to the lastly focused
+  , ("M-S-n", swapWithLast) -- Move the focused to the lastly focused
 
     -- Kill windows
-    ("M-S-c", kill1), -- Kill the currently focused client
-    ("M-C-S-c", killAll), -- Kill all windows on current workspace
+  , ("M-S-c", kill1) -- Kill the currently focused client
+  , ("M-C-S-c", killAll) -- Kill all windows on current workspace
 
     -- Workspaces
-    ("M-[", moveTo Prev anyWS), -- moveTo previous workspace
-    ("M-]", moveTo Next anyWS), -- moveTo next workspace
-    ("M-`", toggleWS),
-    ("M-S-[", shiftTo Prev nonNSP >> moveTo Prev nonNSP), -- Shifts focused window to prev ws and move
-    ("M-S-]", shiftTo Next nonNSP >> moveTo Next nonNSP), -- Shifts focused window to next ws and move
-    ("M-C-[", prevScreen), -- Switch focus to prev monitor
-    ("M-C-]", nextScreen), -- Switch focus to next monitor
-    ("M-C-S-[", shiftPrevScreen >> prevScreen), -- Shifts focused window to prev monitor and move
-    ("M-C-S-]", shiftNextScreen >> nextScreen), -- Shifts focused window to next monitor and move
+  , ("M-[", moveTo Prev anyWS) -- moveTo previous workspace
+  , ("M-]", moveTo Next anyWS) -- moveTo next workspace
+  , ("M-`", toggleWS)
+  , ("M-S-[", shiftTo Prev nonNSP >> moveTo Prev nonNSP) -- Shifts focused window to prev ws and move
+  , ("M-S-]", shiftTo Next nonNSP >> moveTo Next nonNSP) -- Shifts focused window to next ws and move
+  , ("M-C-[", prevScreen) -- Switch focus to prev monitor
+  , ("M-C-]", nextScreen) -- Switch focus to next monitor
+  , ("M-C-S-[", shiftPrevScreen >> prevScreen) -- Shifts focused window to prev monitor and move
+  , ("M-C-S-]", shiftNextScreen >> nextScreen) -- Shifts focused window to next monitor and move
 
     -- Floating windows
-    ("M-t", withFocused $ windows . W.sink), -- Push floating window back to tile
-    ("M-S-t", sinkAll), -- Push ALL floating windows to tile
+  , ("M-t", withFocused $ windows . W.sink) -- Push floating window back to tile
+  , ("M-S-t", sinkAll) -- Push ALL floating windows to tile
 
     -- Increase/decrease spacing (gaps)
-    ("M--", decWindowSpacing 1), -- Decrease window spacing
-    ("M-=", incWindowSpacing 1), -- Increase window spacing
-    ("M-S--", decScreenSpacing 1), -- Decrease screen spacing
-    ("M-S-=", incScreenSpacing 1), -- Increase screen spacing
+  , ("M--", decWindowSpacing 1) -- Decrease window spacing
+  , ("M-=", incWindowSpacing 1)-- Increase window spacing
+  , ("M-S--", decScreenSpacing 1) -- Decrease screen spacing
+  , ("M-S-=", incScreenSpacing 1) -- Increase screen spacing
 
     -- Layouts
-    ("M-<Space>", sendMessage NextLayout),
-    ("M-r", sendMessage $ MT.Toggle MIRROR),
-    ("M-C-M1-<Up>", sendMessage Arrange),
-    ("M-C-M1-<Down>", sendMessage DeArrange),
-    ("M-f", sendMessage (MT.Toggle NBFULL) >> sendMessage ToggleStruts), -- Toggles noborder/full
-    ("M-S-f", sendMessage ToggleStruts),
-    ("M-C-f", sendMessage (T.Toggle "floats")), -- Toggles my 'floats' layout
+  , ("M-<Space>", sendMessage NextLayout)
+  , ("M-r", sendMessage $ MT.Toggle MIRROR)
+  , ("M-C-M1-<Up>", sendMessage Arrange)
+  , ("M-C-M1-<Down>", sendMessage DeArrange)
+  , ("M-f", sendMessage (MT.Toggle NBFULL) >> sendMessage ToggleStruts) -- Toggles noborder/full
+  , ("M-S-f", sendMessage ToggleStruts)
+  , ("M-C-f", sendMessage (T.Toggle "floats")) -- Toggles my 'floats' layout
 
     -- Increase/decrease windows in the master pane or the stack
-    ("M-,", sendMessage (IncMasterN 1)), -- Increase number of clients in master pane
-    ("M-.", sendMessage (IncMasterN (-1))), -- Decrease number of clients in master pane
+  , ("M-,", sendMessage (IncMasterN 1))    -- Increase number of clients in master pane
+  , ("M-.", sendMessage (IncMasterN (-1))) -- Decrease number of clients in master pane
     -- , ("M-C-,"        , increaseLimit)                   -- Increase number of windows
     -- , ("M-C-."        , decreaseLimit)                   -- Decrease number of windows
 
     -- Window resizing
-    ("M-C-h", sendMessage Shrink), -- Shrink horiz window width
-    ("M-C-l", sendMessage Expand), -- Expand horiz window width
-    ("M-C-j", sendMessage MirrorShrink), -- Shrink vert window width
-    ("M-C-k", sendMessage MirrorExpand), -- Exoand vert window width
-    ("M-C-i", withFocused $ keysResizeWindow (0, 9) (1 / 2, 1 / 2)),
-    ("M-C-u", withFocused $ keysResizeWindow (0, -9) (1 / 2, 1 / 2)),
-    ("M-C-o", withFocused $ keysResizeWindow (16, 0) (1 / 2, 1 / 2)),
-    ("M-C-y", withFocused $ keysResizeWindow (-16, 0) (1 / 2, 1 / 2)),
+  , ("M-C-h", sendMessage Shrink) -- Shrink horiz window width
+  , ("M-C-l", sendMessage Expand) -- Expand horiz window width
+  , ("M-C-j", sendMessage MirrorShrink) -- Shrink vert window width
+  , ("M-C-k", sendMessage MirrorExpand) -- Exoand vert window width
+  , ("M-C-i", withFocused $ keysResizeWindow (0, 9) (1 / 2, 1 / 2))
+  , ("M-C-u", withFocused $ keysResizeWindow (0, -9) (1 / 2, 1 / 2))
+  , ("M-C-o", withFocused $ keysResizeWindow (16, 0) (1 / 2, 1 / 2))
+  , ("M-C-y", withFocused $ keysResizeWindow (-16, 0) (1 / 2, 1 / 2))
     -- Window moving
-    ("M-i", withFocused $ keysMoveWindow (0, -9)),
-    ("M-u", withFocused $ keysMoveWindow (0, 9)),
-    ("M-o", withFocused $ keysMoveWindow (16, 0)),
-    ("M-y", withFocused $ keysMoveWindow (-16, 0)),
+  , ("M-i", withFocused $ keysMoveWindow (0, -9))
+  , ("M-u", withFocused $ keysMoveWindow (0, 9))
+  , ("M-o", withFocused $ keysMoveWindow (16, 0))
+  , ("M-y", withFocused $ keysMoveWindow (-16, 0))
     -- emacs in tiling
-    ("M-S-d", spawn myEditor),
-    ("M-S-<Return>", spawn $ myTerminal ++ " -e tmux"),
-    ("M-C-<Return>", namedScratchpadAction scratchpads "tmux"),
+  , ("M-S-d", spawn myEditor)
+  , ("M-S-<Return>", spawn $ myTerminal ++ " -e tmux")
+  , ("M-C-<Return>", namedScratchpadAction scratchpads "tmux")
     -- Scratchpads
-    ("M-C-d", namedScratchpadAction scratchpads "Brave-browser"),
-    ("M-d", namedScratchpadAction scratchpads "emacs"),
-    ("M-z", namedScratchpadAction scratchpads "htop"),
-    ("M-x", namedScratchpadAction scratchpads "btm"),
+  , ("M-C-d", namedScratchpadAction scratchpads "Brave-browser")
+  , ("M-d", namedScratchpadAction scratchpads "emacs")
+  , ("M-z", namedScratchpadAction scratchpads "htop")
+  , ("M-x", namedScratchpadAction scratchpads "btm")
     -- Dynamic Scratchpads
-    ("M-S-a", withFocused $ toggleDynamicNSP "dyn1"),
-    ("M-S-s", withFocused $ toggleDynamicNSP "dyn2"),
-    ("M-a", dynamicNSPAction "dyn1"),
-    ("M-s", dynamicNSPAction "dyn2"),
+  , ("M-S-a", withFocused $ toggleDynamicNSP "dyn1")
+  , ("M-S-s", withFocused $ toggleDynamicNSP "dyn2")
+  , ("M-a", dynamicNSPAction "dyn1")
+  , ("M-s", dynamicNSPAction "dyn2")
     -- environment
-    ("M-M1-9", spawn "xbacklight -inc 5"),
-    ("M-M1-8", spawn "xbacklight -dec 5"),
+  , ("M-M1-9", spawn "xbacklight -inc 5")
+  , ("M-M1-8", spawn "xbacklight -dec 5")
     -- Multimedia Keys
-    ("<XF86AudioPlay>", spawn (myTerminal ++ " mocp --play")),
-    ("<XF86AudioPrev>", spawn (myTerminal ++ " mocp --previous")),
-    ("<XF86AudioNext>", spawn (myTerminal ++ " mocp --next")),
-    ("<XF86AudioMute>", spawn "amixer set Master toggle"),
-    ("<XF86AudioLowerVolume>", spawn "amixer set Master 5%- unmute"),
-    ("<XF86AudioRaiseVolume>", spawn "amixer set Master 5%+ unmute"),
-    ("<XF86MonBrightnessUp>", spawn "xbacklight -inc 5"),
-    ("<XF86MonBrightnessDown>", spawn "xbacklight -dec 5"),
-    ("<XF86Favorites>", spawn myScreenLocker),
-    ("<F12>", spawn myScreenLocker),
-    ("M-M1-C-S-l", spawn myScreenLocker),
-    ("<XF86HomePage>", spawn myBrowser),
-    ("<XF86Search>", safeSpawn myBrowser ["https://hoogle.hackage.org"]),
-    ("<XF86Mail>", spawn myEmail),
-    ("<XF86Calculator>", runOrRaise "qalculate-gtk" (resource =? "qalculate-gtk")),
-    ("<XF86Eject>", spawn "toggleeject"),
-    ("<Print>", spawn "scrotd 0")
+  , ("<XF86AudioPlay>", spawn (myTerminal ++ " mocp --play"))
+  , ("<XF86AudioPrev>", spawn (myTerminal ++ " mocp --previous"))
+  , ("<XF86AudioNext>", spawn (myTerminal ++ " mocp --next"))
+  , ("<XF86AudioMute>", spawn "amixer set Master toggle")
+  , ("<XF86AudioLowerVolume>", spawn "amixer set Master 5%- unmute")
+  , ("<XF86AudioRaiseVolume>", spawn "amixer set Master 5%+ unmute")
+  , ("<XF86MonBrightnessUp>", spawn "xbacklight -inc 5")
+  , ("<XF86MonBrightnessDown>", spawn "xbacklight -dec 5")
+  , ("<XF86Favorites>", spawn myScreenLocker)
+  , ("<F12>", spawn myScreenLocker)
+  , ("M-M1-C-S-l", spawn myScreenLocker)
+  , ("<XF86HomePage>", spawn myBrowser)
+  , ("<XF86Search>", safeSpawn myBrowser ["https://hoogle.hackage.org"])
+  , ("<XF86Mail>", spawn myEmail)
+  , ("<XF86Calculator>", runOrRaise "qalculate-gtk" (resource =? "qalculate-gtk"))
+  , ("<XF86Eject>", spawn "toggleeject")
+  , ("<Print>", spawn "scrotd 0")
   ]
     -- screen view and shift
     ++ [ ("M-" ++ m ++ k, screenWorkspace sc >>= flip whenJust (windows . f))
