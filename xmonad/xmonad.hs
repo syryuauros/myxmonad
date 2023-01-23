@@ -1,9 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# OPTIONS_GHC -Wunused-imports #-}
 
-import Data.Maybe (isJust)
+import Control.Monad (guard)
+import Data.Maybe (isJust, fromMaybe)
+import Data.Map qualified as M
 import System.Exit (exitSuccess)
 import System.IO (hPutStrLn)
 import XMonad
@@ -14,7 +15,7 @@ import XMonad
     ManageHook,
     Resize (Expand, Shrink),
     X,
-    XConfig (borderWidth, layoutHook, logHook, manageHook, modMask, startupHook, terminal),
+    XConfig (borderWidth, layoutHook, logHook, manageHook, modMask, startupHook, terminal, handleEventHook),
     XState (windowset),
     appName,
     className,
@@ -35,7 +36,7 @@ import XMonad
     withFocused,
     xmonad,
     (<+>),
-    (=?),
+    (=?), doF, Window, floatLocation,
   )
 import XMonad.Actions.CopyWindow (kill1)
 import XMonad.Actions.CycleWS (WSType (..), anyWS, moveTo, nextScreen, prevScreen, shiftNextScreen, shiftPrevScreen, shiftTo, toggleWS)
@@ -45,9 +46,9 @@ import XMonad.Actions.RotSlaves (rotAllDown, rotSlavesDown)
 import XMonad.Actions.WindowGo (runOrRaise)
 import XMonad.Actions.WithAll (killAll, sinkAll)
 import XMonad.Hooks.DynamicLog (PP (..), dynamicLogWithPP, shorten, wrap, xmobarColor, xmobarPP)
-import XMonad.Hooks.EwmhDesktops (ewmh, ewmhFullscreen)
+import XMonad.Hooks.EwmhDesktops (ewmh, ewmhFullscreen, fullscreenEventHook, setEwmhActivateHook)
 import XMonad.Hooks.ManageDocks (ToggleStruts (..), avoidStruts)
-import XMonad.Hooks.ManageHelpers (isDialog)
+import XMonad.Hooks.ManageHelpers (isDialog, doSideFloat, Side (CE))
 import XMonad.Hooks.RefocusLast (refocusLastLayoutHook, swapWithLast, toggleFocus)
 import XMonad.Hooks.SetWMName (setWMName)
 import XMonad.Hooks.WorkspaceHistory (workspaceHistoryHook)
@@ -77,32 +78,31 @@ main = do
   xmproc1 <- spawnPipe "xmobar -x 1 $HOME/.config/xmobar/xmobarrc"
   xmproc2 <- spawnPipe "xmobar -x 2 $HOME/.config/xmobar/xmobarrc"
 
-  let conf =
-        def
-          { modMask = myModMask,
-            terminal = myTerminal,
-            startupHook = myStartupHook,
-            manageHook = myManageHook <+> namedScratchpadManageHook scratchpads,
-            layoutHook = refocusLastLayoutHook $ showWName' def myLayoutHook,
-            borderWidth = 0,
-            logHook =
-              workspaceHistoryHook
-                <+> dynamicLogWithPP
-                  xmobarPP
-                    { ppOutput = \x -> hPutStrLn xmproc0 x >> hPutStrLn xmproc1 x >> hPutStrLn xmproc2 x,
-                      ppCurrent = xmobarColor "#98be65" "" . wrap "[" "]", -- Current workspace in xmobar
-                      ppVisible = xmobarColor "#98be65" "", -- Visible but not current workspace
-                      ppHidden = xmobarColor "#82AAFF" "" . wrap "*" "", -- Hidden workspaces in xmobar
-                      ppHiddenNoWindows = xmobarColor "#c792ea" "", -- Hidden workspaces (no windows)
-                      ppTitle = xmobarColor "#b3afc2" "" . shorten 60, -- Title of active window in xmobar
-                      ppSep = "<fc=#666666> <fn=1>|</fn> </fc>", -- Separators in xmobar
-                      ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!", -- Urgent workspace
-                      ppExtras = [windowCount], -- # of windows current workspace
-                      ppOrder = \(ws : l : t : ex) -> [ws, l] ++ ex ++ [t]
-                    }
-          }
+  let conf = def
+        { modMask = myModMask,
+          terminal = myTerminal,
+          startupHook = myStartupHook,
+          manageHook = myManageHook <+> namedScratchpadManageHook scratchpads,
+          layoutHook = refocusLastLayoutHook $ showWName' def myLayoutHook,
+          borderWidth = 0,
+          logHook =
+            workspaceHistoryHook
+              <+> dynamicLogWithPP
+                xmobarPP
+                  { ppOutput = \x -> hPutStrLn xmproc0 x >> hPutStrLn xmproc1 x >> hPutStrLn xmproc2 x,
+                    ppCurrent = xmobarColor "#98be65" "" . wrap "[" "]", -- Current workspace in xmobar
+                    ppVisible = xmobarColor "#98be65" "", -- Visible but not current workspace
+                    ppHidden = xmobarColor "#82AAFF" "" . wrap "*" "", -- Hidden workspaces in xmobar
+                    ppHiddenNoWindows = xmobarColor "#c792ea" "", -- Hidden workspaces (no windows)
+                    ppTitle = xmobarColor "#b3afc2" "" . shorten 60, -- Title of active window in xmobar
+                    ppSep = "<fc=#666666> <fn=1>|</fn> </fc>", -- Separators in xmobar
+                    ppUrgent = xmobarColor "#C45500" "" . wrap "!" "!", -- Urgent workspace
+                    ppExtras = [windowCount], -- # of windows current workspace
+                    ppOrder = \(ws : l : t : ex) -> [ws, l] ++ ex ++ [t]
+                  }
+        }
 
-  xmonad $ ewmhFullscreen $ ewmh $ conf `additionalKeysP` myKeyBindings
+  xmonad $ ewmh $ conf `additionalKeysP` myKeyBindings
 
 myModMask :: KeyMask
 myModMask = mod4Mask -- Sets modkey to super/windows key
@@ -142,6 +142,11 @@ myStartupHook =
     spawn "picom -cf -i 0.8 --use-ewmh-active-win"
     <+> setWMName "LG3D"
 
+------------------------------------------------------------------------
+--
+--   Layout Hook
+--
+
 myLayoutHook = avoidStruts $ mouseResize myDefaultLayout
   where
     myDefaultLayout = renamed [Replace "tall"] (mkToggleAll tall)
@@ -157,6 +162,12 @@ myLayoutHook = avoidStruts $ mouseResize myDefaultLayout
       where
         mySpacing :: Integer -> l a -> ModifiedLayout Spacing l a
         mySpacing i = spacingRaw False (Border i i i i) True (Border i i i i) True
+
+
+------------------------------------------------------------------------
+--
+--   ManageHooks
+--
 
 myManageHook :: ManageHook
 myManageHook =
@@ -175,28 +186,46 @@ myManageHook =
     byRole = ["pop-up", "GtkFileChooserDialog", "bubble"]
     byType = ["_NET_WM_WINDOW_TYPE_SPLASH", "_NET_WM_WINDOW_TYPE_DIALOG"]
 
+
 data App
-  = ClassApp { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
-  | TitleApp { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
-  | NameApp  { name :: String, px :: Rational, py :: Rational, wd :: Rational, ht :: Rational, cmd :: String }
-  deriving (Show)
+  = ClassApp { name :: String, hook :: ManageHook, cmd :: String }
+  | TitleApp { name :: String, hook :: ManageHook, cmd :: String }
+  | NameApp  { name :: String, hook :: ManageHook, cmd :: String }
 
 scratchpads :: [NamedScratchpad]
-scratchpads =
-  mkNS
-    <$> [ TitleApp "emacs"         (10 / 32) (1 / 32) (21 / 32) (30 / 32) "emacsclient -s emacs -c -a 'emacs --title emacs --bg-daemon=emacs'"
-        , TitleApp "tmux"          (4 / 32)  (1 / 32) (24 / 32) (30 / 32) (myTerminal ++ " -t tmux -e tmux")
-        , TitleApp "htop"          (1 / 32)  (1 / 32) (30 / 32) (16 / 32) (myTerminal ++ " -t htop -e htop")
-        , TitleApp "btm"           (16 / 32) (1 / 32) (15 / 32) (30 / 32) (myTerminal ++ " -t btm -e btm")
-        , ClassApp "Brave-browser" (10 / 32) (1 / 32) (21 / 32) (30 / 32) myBrowser
-        ]
+scratchpads = mkNS
+  <$> [ TitleApp "emacs" (customFloating myRightCenter) "emacsclient -s emacs -c -a 'emacs --title emacs --bg-daemon=emacs'"
+      , TitleApp "tmux"  (customFloating myCenter) (myTerminal ++ " -t tmux -e tmux")
+      , TitleApp "htop"  (customFloating myTopCenter) (myTerminal ++ " -t htop -e htop")
+      , TitleApp "btm"   (customFloating myRight) (myTerminal ++ " -t btm -e btm")
+      ]
   where
-    mkNS TitleApp {..} = NS name cmd (title =? name) (customFloating $ W.RationalRect px py wd ht)
-    mkNS ClassApp {..} = NS name cmd (className =? name) (customFloating $ W.RationalRect px py wd ht)
-    mkNS NameApp {..} = NS name cmd (appName =? name) (customFloating $ W.RationalRect px py wd ht)
+    mkNS TitleApp {..} = NS name cmd (title =? name) hook
+    mkNS ClassApp {..} = NS name cmd (className =? name) hook
+    mkNS NameApp {..} = NS name cmd (appName =? name) hook
+
+
+myCenter :: W.RationalRect
+myCenter = W.RationalRect (4 / 32)  (1 / 32) (24 / 32) (30 / 32)
+
+myRight :: W.RationalRect
+myRight = W.RationalRect (33 / 64) (1 / 32) (15 / 32) (30 / 32)
+
+myLeft :: W.RationalRect
+myLeft = W.RationalRect (1 / 64) (1 / 32) (15 / 32) (30 / 32)
+
+myTopCenter :: W.RationalRect
+myTopCenter = W.RationalRect (1 / 32)  (1 / 32) (30 / 32) (16 / 32)
+
+myRightCenter :: W.RationalRect
+myRightCenter = W.RationalRect (10 / 32) (1 / 32) (21 / 32) (30 / 32)  -- px py wx wy
+
 
 ------------------------------------------------------------------------
--- Key Bindings
+--
+--   Key Bindings
+--
+
 myKeyBindings =
   [ -- ("M-q"       , spawn "xmonad --recompile; xmonad --restart")
     -- ("M-q"       , spawn "restart-xmonad.sh")
@@ -208,7 +237,7 @@ myKeyBindings =
   , ("M-S-p", spawn myRofi)
     -- ("M-s", spawn "dm-search.sh"),
   , ("M-v", spawn "clipmenu")
-  , ("M-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
+  , ("M-C-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
     -- , ("M-o"                    , spawn "dmenu_run -i -p \"Run: \"")
   , ("M-/", spawn "dm-qutebrowser-history.sh")
     -- Windows navigation
@@ -258,34 +287,48 @@ myKeyBindings =
     -- , ("M-C-,"        , increaseLimit)                   -- Increase number of windows
     -- , ("M-C-."        , decreaseLimit)                   -- Decrease number of windows
 
-    -- Window resizing
+    -- Tiled Window resizing
   , ("M-C-h", sendMessage Shrink) -- Shrink horiz window width
   , ("M-C-l", sendMessage Expand) -- Expand horiz window width
   , ("M-C-j", sendMessage MirrorShrink) -- Shrink vert window width
   , ("M-C-k", sendMessage MirrorExpand) -- Exoand vert window width
+
+    -- Floating Window moving
   , ("M-C-i", withFocused $ keysResizeWindow (0, 9) (1 / 2, 1 / 2))
   , ("M-C-u", withFocused $ keysResizeWindow (0, -9) (1 / 2, 1 / 2))
   , ("M-C-o", withFocused $ keysResizeWindow (16, 0) (1 / 2, 1 / 2))
   , ("M-C-y", withFocused $ keysResizeWindow (-16, 0) (1 / 2, 1 / 2))
+
     -- Window moving
   , ("M-i", withFocused $ keysMoveWindow (0, -9))
   , ("M-u", withFocused $ keysMoveWindow (0, 9))
   , ("M-o", withFocused $ keysMoveWindow (16, 0))
   , ("M-y", withFocused $ keysMoveWindow (-16, 0))
-    -- emacs in tiling
-  , ("M-S-d", spawn myEditor)
+
+    -- Window floating at a custom position
+  , ("M-g", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myRightCenter)
+  , ("M-z", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myLeft)
+  , ("M-x", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myCenter)
+  , ("M-c", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myRight)
+
+    -- Spawn major apps
   , ("M-S-<Return>", spawn $ myTerminal ++ " -e tmux")
-  , ("M-C-<Return>", namedScratchpadAction scratchpads "tmux")
+  , ("M-C-<Return>", spawn myEditor)
+  , ("M-S-C-<Return>", spawn myBrowser)
+
     -- Scratchpads
-  , ("M-C-d", namedScratchpadAction scratchpads "Brave-browser")
-  , ("M-d", namedScratchpadAction scratchpads "emacs")
-  , ("M-z", namedScratchpadAction scratchpads "htop")
-  , ("M-x", namedScratchpadAction scratchpads "btm")
+  , ("M-C-d", namedScratchpadAction scratchpads "emacs")
+  , ("M-C-z", namedScratchpadAction scratchpads "htop")
+  , ("M-C-x", namedScratchpadAction scratchpads "btm")
+
     -- Dynamic Scratchpads
   , ("M-S-a", withFocused $ toggleDynamicNSP "dyn1")
   , ("M-S-s", withFocused $ toggleDynamicNSP "dyn2")
+  , ("M-S-d", withFocused $ toggleDynamicNSP "dyn3")
   , ("M-a", dynamicNSPAction "dyn1")
   , ("M-s", dynamicNSPAction "dyn2")
+  , ("M-d", dynamicNSPAction "dyn3")
+
     -- environment
   , ("M-M1-9", spawn "xbacklight -inc 5")
   , ("M-M1-8", spawn "xbacklight -dec 5")
@@ -318,3 +361,38 @@ myKeyBindings =
 
     nonNSP = WSIs (return (\ws -> W.tag ws /= "NSP"))
     nonEmptyNonNSP = WSIs (return (\ws -> isJust (W.stack ws) && W.tag ws /= "NSP"))
+
+
+
+
+------------------------------------------------------------------------
+--
+--   Custom Unitity Functions
+--
+
+
+-- | Make a tiled window floating, using the rectangle given as the argument,
+--   mofified the `float` function at
+--   https://hackage.haskell.org/package/xmonad-0.17.1/docs/src/XMonad.Operations.html#float
+floatToRationalRect :: W.RationalRect -> Window -> X ()
+floatToRationalRect rr w = do
+    (sc, _) <- floatLocation w
+    windows $ \ws -> W.float w rr . fromMaybe ws $ do
+        i  <- W.findTag w ws
+        guard $ i `elem` map (W.tag . W.workspace) (W.screens ws)
+        f  <- W.peek ws
+        sw <- W.lookupWorkspace sc ws
+        return (W.focusWindow f . W.shiftWin sw w $ ws)
+
+
+-- If the window is floating then (f), if tiled then (n)
+ifFloatThenElse :: X () -> X () -> X ()
+ifFloatThenElse f n = withFocused $ \windowId -> do
+    floats <- gets (W.floating . windowset)
+    if windowId `M.member` floats -- if the current window is floating...
+       then f
+       else n
+
+
+ifFloatThenSinkElse :: X () -> X ()
+ifFloatThenSinkElse = ifFloatThenElse (withFocused $ windows . W.sink)
