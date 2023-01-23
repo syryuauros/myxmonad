@@ -71,6 +71,8 @@ import XMonad.StackSet qualified as W
 import XMonad.Util.EZConfig (additionalKeysP)
 import XMonad.Util.NamedScratchpad (NamedScratchpad (..), customFloating, namedScratchpadAction, namedScratchpadManageHook, toggleDynamicNSP, dynamicNSPAction)
 import XMonad.Util.Run (safeSpawn, spawnPipe)
+import XMonad.Core (trace)
+import Data.Ratio ((%))
 
 main :: IO ()
 main = do
@@ -306,10 +308,10 @@ myKeyBindings =
   , ("M-y", withFocused $ keysMoveWindow (-16, 0))
 
     -- Window floating at a custom position
-  , ("M-g", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myRightCenter)
-  , ("M-z", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myLeft)
-  , ("M-x", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myCenter)
-  , ("M-c", ifFloatThenSinkElse $ withFocused $ floatToRationalRect myRight)
+  , ("M-g", withFocused $ floatToRationalRect myRightCenter)
+  , ("M-z", withFocused $ floatToRationalRect myLeft)
+  , ("M-x", withFocused $ floatToRationalRect myCenter)
+  , ("M-c", withFocused $ floatToRationalRect myRight)
 
     -- Spawn major apps
   , ("M-S-<Return>", spawn $ myTerminal ++ " -e tmux")
@@ -375,14 +377,28 @@ myKeyBindings =
 --   mofified the `float` function at
 --   https://hackage.haskell.org/package/xmonad-0.17.1/docs/src/XMonad.Operations.html#float
 floatToRationalRect :: W.RationalRect -> Window -> X ()
-floatToRationalRect rr w = do
-    (sc, _) <- floatLocation w
-    windows $ \ws -> W.float w rr . fromMaybe ws $ do
-        i  <- W.findTag w ws
-        guard $ i `elem` map (W.tag . W.workspace) (W.screens ws)
-        f  <- W.peek ws
-        sw <- W.lookupWorkspace sc ws
-        return (W.focusWindow f . W.shiftWin sw w $ ws)
+floatToRationalRect rr' w = do
+    floats <- gets (W.floating . windowset)
+    (sc, rr) <- floatLocation w
+    if w `M.member` floats && rr `almostSame` rr' -- if the current window is floating...
+      then (windows . W.sink) w
+      else do
+        windows $ \ws -> W.float w rr' . fromMaybe ws $ do
+            i  <- W.findTag w ws
+            guard $ i `elem` map (W.tag . W.workspace) (W.screens ws)
+            f  <- W.peek ws
+            sw <- W.lookupWorkspace sc ws
+            return (W.focusWindow f . W.shiftWin sw w $ ws)
+  where
+    almostSame :: W.RationalRect -> W.RationalRect -> Bool
+    almostSame (W.RationalRect px py wx wy) (W.RationalRect px' py' wx' wy')
+      =  rd px px' <= tol
+      && rd py py' <= tol
+      && rd wx wx' <= tol
+      && rd wy wy' <= tol
+      where
+        tol = 2%100
+        rd a b = 2 * (a - b) / (a + b)  -- relative difference
 
 
 -- If the window is floating then (f), if tiled then (n)
