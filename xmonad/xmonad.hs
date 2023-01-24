@@ -156,8 +156,8 @@ myLayoutHook = avoidStruts $ mouseResize myDefaultLayout
       windowArrange
         $ T.toggleLayouts floats
         $ mkToggle (NBFULL ?? EOT)
-          . mkToggle (single MIRROR)
-        $ l
+        $ mkToggle (single MIRROR)
+        l
     tall = mkLayout $ ResizableTall 1 (3 / 100) (1 / 2) []
     floats = mkLayout simplestFloat
     mkLayout layout = windowNavigation $ mySpacing 6 layout
@@ -238,10 +238,11 @@ myKeyBindings =
   , ("M-p", spawn myDmenu)
   , ("M-S-p", spawn myRofi)
     -- ("M-s", spawn "dm-search.sh"),
-  , ("M-v", spawn "clipmenu")
-  , ("M-C-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
+  , ("M-S-v", spawn "clipmenu")
+  , ("M-S-C-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
     -- , ("M-o"                    , spawn "dmenu_run -i -p \"Run: \"")
   , ("M-/", spawn "dm-qutebrowser-history.sh")
+
     -- Windows navigation
   , ("M-S-m", swapMaster) -- Moves focused window to master, others maintain order
   , ("M-C-<Tab>", rotAllDown) -- Rotate all the windows in the current stack
@@ -295,23 +296,23 @@ myKeyBindings =
   , ("M-C-j", sendMessage MirrorShrink) -- Shrink vert window width
   , ("M-C-k", sendMessage MirrorExpand) -- Exoand vert window width
 
-    -- Floating Window moving
+    -- Floating Window resizing
   , ("M-C-i", withFocused $ keysResizeWindow (0, 9) (1 / 2, 1 / 2))
   , ("M-C-u", withFocused $ keysResizeWindow (0, -9) (1 / 2, 1 / 2))
   , ("M-C-o", withFocused $ keysResizeWindow (16, 0) (1 / 2, 1 / 2))
   , ("M-C-y", withFocused $ keysResizeWindow (-16, 0) (1 / 2, 1 / 2))
 
-    -- Window moving
+    -- Floating Window moving
   , ("M-i", withFocused $ keysMoveWindow (0, -9))
   , ("M-u", withFocused $ keysMoveWindow (0, 9))
   , ("M-o", withFocused $ keysMoveWindow (16, 0))
   , ("M-y", withFocused $ keysMoveWindow (-16, 0))
 
     -- Window floating at a custom position
-  , ("M-g", withFocused $ floatToRationalRect myRightCenter)
   , ("M-z", withFocused $ floatToRationalRect myLeft)
   , ("M-x", withFocused $ floatToRationalRect myCenter)
-  , ("M-c", withFocused $ floatToRationalRect myRight)
+  , ("M-c", withFocused $ floatToRationalRect myRightCenter)
+  , ("M-v", withFocused $ floatToRationalRect myRight)
 
     -- Spawn major apps
   , ("M-S-<Return>", spawn $ myTerminal ++ " -e tmux")
@@ -319,9 +320,9 @@ myKeyBindings =
   , ("M-S-C-<Return>", spawn myBrowser)
 
     -- Scratchpads
-  , ("M-C-d", namedScratchpadAction scratchpads "emacs")
-  , ("M-C-z", namedScratchpadAction scratchpads "htop")
-  , ("M-C-x", namedScratchpadAction scratchpads "btm")
+  , ("M-C-a", namedScratchpadAction scratchpads "emacs")
+  , ("M-C-s", namedScratchpadAction scratchpads "htop")
+  , ("M-C-d", namedScratchpadAction scratchpads "btm")
 
     -- Dynamic Scratchpads
   , ("M-S-a", withFocused $ toggleDynamicNSP "dyn1")
@@ -334,6 +335,7 @@ myKeyBindings =
     -- environment
   , ("M-M1-9", spawn "xbacklight -inc 5")
   , ("M-M1-8", spawn "xbacklight -dec 5")
+
     -- Multimedia Keys
   , ("<XF86AudioPlay>", spawn (myTerminal ++ " mocp --play"))
   , ("<XF86AudioPrev>", spawn (myTerminal ++ " mocp --previous"))
@@ -398,7 +400,7 @@ floatToRationalRect rr' w = do
       && rd wy wy' <= tol
       where
         tol = 2%100
-        rd a b = 2 * (a - b) / (a + b)  -- relative difference
+        rd a b = 2 * abs (a - b) / (a + b)  -- relative difference
 
 
 -- If the window is floating then (f), if tiled then (n)
