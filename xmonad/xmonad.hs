@@ -73,6 +73,9 @@ import XMonad.Util.NamedScratchpad (NamedScratchpad (..), customFloating, namedS
 import XMonad.Util.Run (safeSpawn, spawnPipe)
 import XMonad.Core (trace)
 import Data.Ratio ((%))
+import XMonad.Layout.Gaps (Direction2D(..), GapMessage (..), gaps)
+import XMonad.Layout.LimitWindows (increaseLimit, decreaseLimit)
+import XMonad.Actions.RepeatAction (rememberActions)
 
 main :: IO ()
 main = do
@@ -104,7 +107,8 @@ main = do
                   }
         }
 
-  xmonad $ ewmh $ conf `additionalKeysP` myKeyBindings
+  xmonad $ ewmh $ conf
+    `additionalKeysP` rememberActions "M-." myKeyBindings
 
 myModMask :: KeyMask
 myModMask = mod4Mask -- Sets modkey to super/windows key
@@ -153,7 +157,8 @@ myLayoutHook = avoidStruts $ mouseResize myDefaultLayout
   where
     myDefaultLayout = renamed [Replace "tall"] (mkToggleAll tall)
     mkToggleAll l =
-      windowArrange
+      gaps [(L, 0), (D, 0), (U, 0), (R, 0)]
+        $ windowArrange
         $ T.toggleLayouts floats
         $ mkToggle (NBFULL ?? EOT)
         $ mkToggle (single MIRROR)
@@ -285,10 +290,10 @@ myKeyBindings =
   , ("M-C-f", sendMessage (T.Toggle "floats")) -- Toggles my 'floats' layout
 
     -- Increase/decrease windows in the master pane or the stack
-  , ("M-,", sendMessage (IncMasterN 1))    -- Increase number of clients in master pane
-  , ("M-.", sendMessage (IncMasterN (-1))) -- Decrease number of clients in master pane
-    -- , ("M-C-,"        , increaseLimit)                   -- Increase number of windows
-    -- , ("M-C-."        , decreaseLimit)                   -- Decrease number of windows
+  , ("M-S-,", sendMessage (IncMasterN 1))    -- Increase number of clients in master pane
+  , ("M-S-.", sendMessage (IncMasterN (-1))) -- Decrease number of clients in master pane
+  , ("M-C-,", increaseLimit)                   -- Increase number of windows
+  , ("M-C-.", decreaseLimit)                   -- Decrease number of windows
 
     -- Tiled Window resizing
   , ("M-C-h", sendMessage Shrink) -- Shrink horiz window width
@@ -297,10 +302,14 @@ myKeyBindings =
   , ("M-C-k", sendMessage MirrorExpand) -- Exoand vert window width
 
     -- Floating Window resizing
-  , ("M-C-i", withFocused $ keysResizeWindow (0, 9) (1 / 2, 1 / 2))
-  , ("M-C-u", withFocused $ keysResizeWindow (0, -9) (1 / 2, 1 / 2))
-  , ("M-C-o", withFocused $ keysResizeWindow (16, 0) (1 / 2, 1 / 2))
-  , ("M-C-y", withFocused $ keysResizeWindow (-16, 0) (1 / 2, 1 / 2))
+  , ("M-S-i", withFocused $ keysResizeWindow (0, 9) (0, 1))
+  , ("M-S-u", withFocused $ keysResizeWindow (0, 9) (0, 0))
+  , ("M-S-o", withFocused $ keysResizeWindow (16, 0) (0, 0))
+  , ("M-S-y", withFocused $ keysResizeWindow (16, 0) (1, 0))
+  , ("M-C-i", withFocused $ keysResizeWindow (0, -9) (0, 1))
+  , ("M-C-u", withFocused $ keysResizeWindow (0, -9) (0, 0))
+  , ("M-C-o", withFocused $ keysResizeWindow (-16, 0) (0, 0))
+  , ("M-C-y", withFocused $ keysResizeWindow (-16, 0) (1, 0))
 
     -- Floating Window moving
   , ("M-i", withFocused $ keysMoveWindow (0, -9))
@@ -354,15 +363,31 @@ myKeyBindings =
   , ("<XF86Calculator>", runOrRaise "qalculate-gtk" (resource =? "qalculate-gtk"))
   , ("<XF86Eject>", spawn "toggleeject")
   , ("<Print>", spawn "scrotd 0")
+
+  -- layout gap
+  , ("M-g S-i", withFocused $ keysResizeWindow (0, 9) (0, 1))
+  , ("M-g S-u", withFocused $ keysResizeWindow (0, 9) (0, 0))
+  , ("M-g S-o", withFocused $ keysResizeWindow (16, 0) (0, 0))
+  , ("M-g S-y", withFocused $ keysResizeWindow (16, 0) (1, 0))
+  , ("M-g C-i", withFocused $ keysResizeWindow (0, -9) (0, 1))
+  , ("M-g C-u", withFocused $ keysResizeWindow (0, -9) (0, 0))
+  , ("M-g C-o", withFocused $ keysResizeWindow (-16, 0) (0, 0))
+  , ("M-g C-y", withFocused $ keysResizeWindow (-16, 0) (1, 0))
   ]
-    -- screen view and shift
-    ++ [ ("M-" ++ m ++ k, screenWorkspace sc >>= flip whenJust (windows . f))
-         | (k, sc) <- zip ["q", "w", "e"] [0 ..],
-           (f, m) <- [(W.view, ""), (W.shift, "S-")]
-       ]
+
+  -- screen view and shift
+  ++ [ ("M-" ++ m ++ k, screenWorkspace sc >>= flip whenJust (windows . f))
+     | (k, sc) <- zip ["q", "w", "e"] [0 ..]
+     , (f, m) <- [(W.view, ""), (W.shift, "S-")]
+     ]
+
+  ++ [ ("M-g " ++ f ++ " " ++ k, sendMessage $ m d)
+     | (k, d) <- [("h",L), ("j",D), ("k",U), ("l",R)]
+     , (f, m) <- [("v", ToggleGap), ("h", IncGap 10), ("f", DecGap 10)]
+     ]
+
   where
     -- The following lines are needed for named scratchpads.
-
     nonNSP = WSIs (return (\ws -> W.tag ws /= "NSP"))
     nonEmptyNonNSP = WSIs (return (\ws -> isJust (W.stack ws) && W.tag ws /= "NSP"))
 
