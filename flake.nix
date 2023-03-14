@@ -7,7 +7,7 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    wallpapers.url = "github:jjdosa/wallpapers";
+    wallpapers.url = "github:syryuauros/mywallpapers";
     wallpapers.flake = false;
   };
 
