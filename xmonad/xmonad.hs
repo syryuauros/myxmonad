@@ -145,7 +145,7 @@ myStartupHook :: X ()
 myStartupHook =
   do
     spawn "xset r rate 350 80"
-    spawn "picom -cf -i 0.8 --use-ewmh-active-win"
+    -- spawn "picom -cf -i 0.8 --use-ewmh-active-win"
     <+> setWMName "LG3D"
 
 ------------------------------------------------------------------------
