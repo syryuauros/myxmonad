@@ -60,7 +60,7 @@ in {
       enable = true;
       imageDirectory = "${inputs.wallpapers}";
       display = "fill";
-      interval = "1h";
+      interval = "0.1";
     };
 
   };
