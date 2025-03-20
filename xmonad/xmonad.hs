@@ -244,7 +244,8 @@ myKeyBindings =
   , ("M-S-p", spawn myRofi)
     -- ("M-s", spawn "dm-search.sh"),
   , ("M-S-v", spawn "clipmenu")
-  , ("M-S-C-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
+  , ("M-S-C-s", spawn "flameshot gui")
+  -- , ("M-S-C-c", spawn "mkdir -p ~/captures; flameshot gui -p ~/captures/")
     -- , ("M-o"                    , spawn "dmenu_run -i -p \"Run: \"")
   , ("M-/", spawn "dm-qutebrowser-history.sh")
 

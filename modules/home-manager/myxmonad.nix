@@ -50,6 +50,7 @@ in {
     xdg.configFile."xmobar/xmobarrc".source = mkIf (cfg.xmobarrc != null) cfg.xmobarrc;
 
     home.packages = with pkgs; [
+      flameshot
       xmobar
       dmenu
       arandr
